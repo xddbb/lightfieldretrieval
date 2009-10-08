@@ -9,9 +9,11 @@ namespace DescriptionExtractor
     public class FourierDesc
     {
         private Bitmap bitmap_;
+        private Color shapeColor;
 
         public FourierDesc(Bitmap bitmap)
         {
+            shapeColor = Color.Black;
             bitmap_ = bitmap;
 
             findOutline();
@@ -35,10 +37,11 @@ namespace DescriptionExtractor
                     Color c1 = bitmap_.GetPixel(i, j);
                     Color c2 = bitmap_.GetPixel(i + 1, j);
 
-                    processPixel(c1, c2, i, j, i+1, j, ref outside);
+                   outside = processPixel(c1, c2, i, j, i+1, j, outside);
                 }
             }
 
+            
             // Vertical processing
             for (int i = 0; i < bitmap_.Width - 1; i++)
             {
@@ -50,38 +53,52 @@ namespace DescriptionExtractor
                     Color c1 = bitmap_.GetPixel(i, j);
                     Color c2 = bitmap_.GetPixel(i, j + 1);
 
-                    processPixel(c1, c2, i, j, i, j+1, ref outside);
+                    outside = processPixel(c1, c2, i, j, i, j+1, outside);
                 }
             }
 
             bitmap_.Save("C:\\result.bmp");
         }
 
-        private void processPixel(Color c1, Color c2, int i, int j, int i2, int j2, ref bool outside)
+        private bool processPixel(Color c1, Color c2, int i1, int j1, int i2, int j2, bool outside)
         {
             if (!c1.Equals(c2))
             {
+                // Get grayvalue of surface
+                if (shapeColor.Equals(Color.Black))
+                {
+                    if (!isColor(c1, Color.White))
+                    {
+                        shapeColor = c2;
+                    } 
+                    else if (!isColor(c2, Color.White))
+                    {
+                        shapeColor = c2;
+                    }
+                }
+
+                // Draw borders
                 if (outside)
                 {
-                    Color z = Color.White;
-
-                    if ((isColor(c1, Color.White) || isColor(c1, Color.Blue)) && !isColor(c2, Color.White))
+                    if ((isColor(c1, Color.White) || isColor(c1, Color.Blue)) && isColor(c2, shapeColor))
                     {
-                        bitmap_.SetPixel(i, j, Color.Blue);
+                        bitmap_.SetPixel(i1, j1, Color.Blue);
                         bitmap_.SetPixel(i2, j2, Color.Red);
                         outside = false;
                     }
                 }
                 else
                 {
-                    if (false && !isColor(c1, Color.White) && isColor(c2, Color.White))
+                    if ((isColor(c1, shapeColor) || isColor(c1, Color.Red)) && isColor(c2, Color.White))
                     {
-                        bitmap_.SetPixel(i, j, Color.Red);
+                        bitmap_.SetPixel(i1, j1, Color.Red);
                         bitmap_.SetPixel(i2, j2, Color.Blue);
                         outside = true;
                     }
                 }
             }
+
+            return outside;
         }
 
         private bool isColor(Color c, Color d)
