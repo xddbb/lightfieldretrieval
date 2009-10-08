@@ -43,6 +43,8 @@ namespace Lightfieldretrieval
         public Renderer()
         {
             graphics = new GraphicsDeviceManager(this);
+            graphics.PreferredBackBufferHeight = 256;
+            graphics.PreferredBackBufferWidth = 256;
             //graphics.GraphicsDevice.
             Content.RootDirectory = "Content";
         }
@@ -209,14 +211,14 @@ namespace Lightfieldretrieval
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.White);
 
             graphics.GraphicsDevice.VertexDeclaration = basicEffectVertexDeclaration;
             graphics.GraphicsDevice.Vertices[0].SetSource(vertexBuffer, 0, VertexPositionColor.SizeInBytes);
             graphics.GraphicsDevice.Indices = indexBuffer;
             graphics.GraphicsDevice.RenderState.PointSize = 3.0f;
             graphics.GraphicsDevice.RenderState.CullMode = CullMode.None;
-            graphics.GraphicsDevice.RenderState.FillMode = FillMode.WireFrame;
+            //graphics.GraphicsDevice.RenderState.FillMode = FillMode.WireFrame;
 
             // This code would go between a device 
             basicEffect.World = worldMatrix;
@@ -228,13 +230,15 @@ namespace Lightfieldretrieval
             {
                 pass.Begin();
                 graphics.GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, vectors.Length, 0, indices.Length / 3);
-                graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.PointList, modelVertices, 0, modelVertices.Length);
+                //graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.PointList, modelVertices, 0, modelVertices.Length);
 
                 //graphics.GraphicsDevice.DrawUserIndexedPrimitives<VertexPositionColor>( PrimitiveType.TriangleList, , 0, vectors.Length, 0, 12);
                 //
                 pass.End();
             }
             basicEffect.End();
+
+            base.Draw(gameTime);
 
             ResolveTexture2D renderTargetTexture;
             renderTargetTexture = new ResolveTexture2D(
@@ -247,11 +251,12 @@ namespace Lightfieldretrieval
             graphics.GraphicsDevice.ResolveBackBuffer(renderTargetTexture);
             renderTargetTexture.GenerateMipMaps(TextureFilter.Linear);
             renderTargetTexture.Save("thaview.bmp", ImageFileFormat.Bmp);
+            //
+            this.Exit();
 
             //graphics.GraphicsDevice.DepthStencilBuffer.
             // graphics.GraphicsDevice.ResolveBackBuffer
-
-            base.Draw(gameTime);
+            
         }
     }
 }
