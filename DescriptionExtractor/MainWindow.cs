@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.IO;
 
 namespace DescriptionExtractor
 {
@@ -24,8 +25,21 @@ namespace DescriptionExtractor
             {
                 MessageBox.Show("No input image(s) provided!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
+                return;
             }
+            //
             String filename = args[1];
+            if(!File.Exists(filename))
+            {
+                MessageBox.Show("No input image(s) provided!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
+                return;
+            }
+            //
+            try
+            {
+            // Bitmap = 
+            // File file 
 
             int g = 0;
         }
