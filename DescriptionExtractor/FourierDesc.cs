@@ -42,6 +42,7 @@ namespace DescriptionExtractor
         private void TraceBoundary()
         {
             // Bootstrap Boundary tracing
+            bool finished = false;
             int prev_x = 0;
             int prev_y = 0;
             bitmap_.SetPixel(start_x_, start_y_, Color.Green);
@@ -51,7 +52,7 @@ namespace DescriptionExtractor
             int[] next = new int[2];
             
             // Trace pixel
-            for (int z = 0; z < 2000; z++)
+            for (int z = 0; z < 2000 && !finished; z++)
             {
                 next[0] = 0; next[1] = 0;
                 NextPixel(ref next, prev_x, prev_y, current_x, current_y);
@@ -60,7 +61,11 @@ namespace DescriptionExtractor
                 current_x = next[0];
                 current_y = next[1];
 
-                if (current_x != 0 && current_y != 0)
+                if (current_x == start_x_ && current_y == start_y_)
+                {
+                    finished = true;
+                }
+                else if (current_x != 0 && current_y != 0)
                 {
                     bitmap_.SetPixel(prev_x, prev_y, Color.Green);
                     newbitmap_.SetPixel(prev_x, prev_y, Color.Black);
@@ -107,12 +112,7 @@ namespace DescriptionExtractor
                 dir = 7;
             }
 
-            if (dir == 2)
-            {
-                int i = 0;
-            }
-
-            AroundPixel(ref next, current_x, current_y, 7);
+            AroundPixel(ref next, current_x, current_y, dir);
         }
 
         // Look around pixel for red color
