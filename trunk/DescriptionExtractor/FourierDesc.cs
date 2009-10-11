@@ -11,13 +11,15 @@ namespace DescriptionExtractor
         private Bitmap bitmap_;
         private Bitmap newbitmap_;
         private Color shapeColor;
-        private int maxcount;
+        private int maxcount_;
         private int start_x_;
         private int start_y_;
         private int[] cors_x_;
         private int[] cors_y_;
-        private int[] boundary_x_;
-        private int[] boundary_y_;
+        private double center_x_;
+        private double center_y_;
+        private double[] distance_;
+
 
         // Constructor
 
@@ -25,12 +27,13 @@ namespace DescriptionExtractor
         {
             shapeColor = Color.Black;
             bitmap_ = bitmap;
-            maxcount = 3000;
+            maxcount_ = 3000;
             newbitmap_ = new Bitmap(bitmap.Height, bitmap.Width);
+            center_x_ = bitmap.Width / 2;
+            center_y_ = bitmap.Height / 2;
             cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
             cors_y_ = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
-            boundary_x_ = new int[maxcount];
-            boundary_y_ = new int[maxcount];
+            distance_ = new double[3000];
         }
 
         // Process bitmap
@@ -64,11 +67,10 @@ namespace DescriptionExtractor
             int[] next = new int[2];
             
             // Trace pixel
-            for (int z = 0; z < maxcount && !finished; z++)
+            for (int z = 0; z < maxcount_ && !finished; z++)
             {
                 NextPixel(ref next, prev_x, prev_y, current_x, current_y);
-                boundary_x_[z] = current_x;
-                boundary_y_[z] = current_y;
+                distance_[z] = Math.Sqrt(Math.Pow(center_x_ - current_x, 2) + Math.Pow(center_y_ - current_y, 2));
                 prev_x = current_x;
                 prev_y = current_y;
                 current_x = next[0];
