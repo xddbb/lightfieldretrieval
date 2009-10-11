@@ -11,10 +11,13 @@ namespace DescriptionExtractor
         private Bitmap bitmap_;
         private Bitmap newbitmap_;
         private Color shapeColor;
+        private int maxcount;
         private int start_x_;
         private int start_y_;
-        private int[] xcors;
-        private int[] ycors;
+        private int[] cors_x_;
+        private int[] cors_y_;
+        private int[] boundary_x_;
+        private int[] boundary_y_;
 
         // Constructor
 
@@ -22,9 +25,12 @@ namespace DescriptionExtractor
         {
             shapeColor = Color.Black;
             bitmap_ = bitmap;
+            maxcount = 3000;
             newbitmap_ = new Bitmap(bitmap.Height, bitmap.Width);
-            xcors = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
-            ycors = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
+            cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
+            cors_y_ = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
+            boundary_x_ = new int[maxcount];
+            boundary_y_ = new int[maxcount];
         }
 
         // Process bitmap
@@ -33,8 +39,16 @@ namespace DescriptionExtractor
         {
             FindBoundary();
             TraceBoundary();
+            ComputeFourier();
             bitmap_.Save("C:\\result.bmp");
             newbitmap_.Save("C:\\result2.bmp");
+        }
+
+        // Computes fourier descriptor
+
+        private void ComputeFourier()
+        {
+            int g = 0;
         }
 
         // Traces boundary of bitmap
@@ -45,17 +59,16 @@ namespace DescriptionExtractor
             bool finished = false;
             int prev_x = 0;
             int prev_y = 0;
-            bitmap_.SetPixel(start_x_, start_y_, Color.Green);
-            newbitmap_.SetPixel(start_x_, start_y_, Color.Black);
             int current_x = start_x_;
             int current_y = start_y_;
             int[] next = new int[2];
             
             // Trace pixel
-            for (int z = 0; z < 2000 && !finished; z++)
+            for (int z = 0; z < maxcount && !finished; z++)
             {
-                next[0] = 0; next[1] = 0;
                 NextPixel(ref next, prev_x, prev_y, current_x, current_y);
+                boundary_x_[z] = current_x;
+                boundary_y_[z] = current_y;
                 prev_x = current_x;
                 prev_y = current_y;
                 current_x = next[0];
@@ -65,7 +78,7 @@ namespace DescriptionExtractor
                 {
                     finished = true;
                 }
-                else if (current_x != 0 && current_y != 0)
+                if (current_x != 0 && current_y != 0)
                 {
                     bitmap_.SetPixel(prev_x, prev_y, Color.Green);
                     newbitmap_.SetPixel(prev_x, prev_y, Color.Black);
@@ -126,17 +139,17 @@ namespace DescriptionExtractor
             {
                 lookup = z % 8;
 
-                if (IsColor(bitmap_.GetPixel(x + xcors[lookup], y + ycors[lookup]),Color.Red))
+                if (IsColor(bitmap_.GetPixel(x + cors_x_[lookup], y + cors_y_[lookup]),Color.Red))
                 {
-                    next[0] = x + xcors[lookup];
-                    next[1] = y + ycors[lookup];
+                    next[0] = x + cors_x_[lookup];
+                    next[1] = y + cors_y_[lookup];
                     return;
                 }
-                else if (IsColor(bitmap_.GetPixel(x + xcors[lookup], y + ycors[lookup]), Color.Green) &&
+                else if (IsColor(bitmap_.GetPixel(x + cors_x_[lookup], y + cors_y_[lookup]), Color.Green) &&
                          result[0] == 0 && result[1] == 0)
                 {
-                    result[0] = x + xcors[lookup];
-                    result[1] = y + ycors[lookup];
+                    result[0] = x + cors_x_[lookup];
+                    result[1] = y + cors_y_[lookup];
                 }
             }
 
@@ -203,6 +216,8 @@ namespace DescriptionExtractor
                 }
             }
         }
+
+        // Helper functioin compares colors
 
         private bool IsColor(Color c, Color d)
         {
