@@ -8,14 +8,20 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using System.Xml.Serialization;
+using System.Threading;
+using System.Diagnostics;
 
 namespace DescriptionExtractor
 {
     public partial class MainWindow : Form
     {
         Bitmap image;
+        /*
         ZernikeDesc zernike;
         FeatureVector featureVector;
+        */ 
+        FeatureCollection featureCollection;
+        DirectoryInfo directory;
 
         public MainWindow()
         {
@@ -30,47 +36,90 @@ namespace DescriptionExtractor
             String[] args = Environment.GetCommandLineArgs();
             if (args.Length < 2)
             {
-                MessageBox.Show("No input image(s) provided!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("No input directory provided!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
                 return;
             }
             //
-            String filename = args[1];
-            if(!File.Exists(filename))
+            String dirname = args[1];
+            if(!Directory.Exists(dirname))
             {
-                MessageBox.Show("Input image(s) does not exist!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Input directory does not exist!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
                 return;
             }
-            //
-            try
-            {
-                image = new Bitmap(filename);
-                imageBox.Image = image;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error reding image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Application.Exit();
-            }
+            directory = new DirectoryInfo(dirname);                                             
+            //            
+            imageProcessWorker.RunWorkerAsync();
+        }
 
+        private void imageProcessWorker_DoWork(object sender, DoWorkEventArgs e)
+        {
             /////////////////////////////////////////////////////////////////////////////////
-            // Extract features
+            // 
             /////////////////////////////////////////////////////////////////////////////////
-            featureVector = new FeatureVector();
-            zernike = new ZernikeDesc(image);
-            featureVector.zernike = zernike.Process();
+            FileInfo[] files = directory.GetFiles("*.bmp");
+            featureCollection = new FeatureCollection();
+            featureCollection.featureVectors = new FeatureVector[files.Length];
+            ZernikeDesc zernike;
 
+            int i = 0;
+            foreach (FileInfo file in files)
+            {
+                try
+                {
+                    image = new Bitmap(file.FullName);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error reding image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Application.Exit();
+                }
+                imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
+
+                /////////////////////////////////////////////////////////////////////////////////
+                // Extract features
+                /////////////////////////////////////////////////////////////////////////////////
+                zernike = new ZernikeDesc(image);
+#if DEBUG
+                Stopwatch stopWatch = new Stopwatch();
+                stopWatch.Start();
+#endif
+                featureCollection.featureVectors[i++].zernike = zernike.Process();
+#if DEBUG
+                stopWatch.Stop();
+                // Get the elapsed time as a TimeSpan value.
+                TimeSpan ts = stopWatch.Elapsed;
+
+                // Format and display the TimeSpan value.
+                string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds );
+                Console.WriteLine("Processed image " + file + " in " + elapsedTime);
+#endif                
+            }
+            imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
 
             /////////////////////////////////////////////////////////////////////////////////
             // Save to file
             /////////////////////////////////////////////////////////////////////////////////
             // Serialization
-            XmlSerializer s = new XmlSerializer(typeof(FeatureVector));
-            FileInfo fileinfo = new FileInfo(filename);
-            TextWriter w = new StreamWriter(fileinfo.Directory + @"\features.xml");
-            s.Serialize(w, featureVector);
+            XmlSerializer s = new XmlSerializer(typeof(FeatureCollection));
+            TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
+            s.Serialize(w, featureCollection);
             w.Close();
+
+            /*
+            // Deserialization
+            ShoppingList newList;
+            TextReader r = new StreamReader( "list.xml" );
+            newList = (ShoppingList)s.Deserialize( r );
+            r.Close();
+            */
+        }
+
+        private void imageProcessWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {            
+            processingProgressBar.Value = e.ProgressPercentage;
+            imageBox.Image = (Image)e.UserState;
         }
     }
 }

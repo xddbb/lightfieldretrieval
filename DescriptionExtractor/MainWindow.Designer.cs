@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             this.imageBox = new System.Windows.Forms.PictureBox();
+            this.imageProcessWorker = new System.ComponentModel.BackgroundWorker();
+            this.processingProgressBar = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)(this.imageBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,11 +42,25 @@
             this.imageBox.TabIndex = 0;
             this.imageBox.TabStop = false;
             // 
+            // imageProcessWorker
+            // 
+            this.imageProcessWorker.WorkerReportsProgress = true;
+            this.imageProcessWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(this.imageProcessWorker_DoWork);
+            this.imageProcessWorker.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.imageProcessWorker_ProgressChanged);
+            // 
+            // processingProgressBar
+            // 
+            this.processingProgressBar.Location = new System.Drawing.Point(12, 262);
+            this.processingProgressBar.Name = "processingProgressBar";
+            this.processingProgressBar.Size = new System.Drawing.Size(232, 23);
+            this.processingProgressBar.TabIndex = 1;
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(256, 290);
+            this.Controls.Add(this.processingProgressBar);
             this.Controls.Add(this.imageBox);
             this.Name = "MainWindow";
             this.Text = "Feature Extractor";
@@ -57,6 +73,8 @@
         #endregion
 
         private System.Windows.Forms.PictureBox imageBox;
+        private System.ComponentModel.BackgroundWorker imageProcessWorker;
+        private System.Windows.Forms.ProgressBar processingProgressBar;
     }
 }
 
