@@ -34,7 +34,7 @@ namespace DescriptionExtractor
         protected int N;
 
 		// Maximal order of the Zernike coefs
-		protected static int order = 20;
+		protected static int order = 10;
 
 		/// <summary>
 		/// Creates a Zernike descriptor for the given bitmap
@@ -270,13 +270,13 @@ namespace DescriptionExtractor
 		/// <returns>Sequence of the modulos of the complex Zernike moments</returns>
         public double[] Process()
         {                         
-            double[] coef = new double[order * order];
+            double[] coef = new double[36];
             //
             Complex[] Z = new Complex[order * order];
             int i = 0;
             for (int n = 0; n <= order; n++)
             {
-                for (int m = -n; m <= n; m += 2)
+                for (int m = -n; m <= 0; m += 2)
                 {                    
                     Z[i] = ZernikeMoment(n, m);
                     coef[i] = Z[i].Modulus;
