@@ -20,7 +20,7 @@ namespace DescriptionExtractor
         private int[] cors_y_;
         private double center_x_;
         private double center_y_;
-        private double maxdistance_;
+        private int maxdistance_;
         private ArrayList distance_;
         private int quantized_;
         private double[] fourier_;
@@ -32,11 +32,11 @@ namespace DescriptionExtractor
             shapeColor = Color.Black;
             bitmap_ = bitmap;
             maxcount_ = 4096;
-            quantized_ = 10;
+            quantized_ = 20;
             newbitmap_ = new Bitmap(bitmap.Height, bitmap.Width);
             center_x_ = bitmap.Width / 2;
             center_y_ = bitmap.Height / 2;
-            maxdistance_ = (double)(Math.Sqrt(Math.Pow(center_x_, 2) + Math.Pow(center_y_, 2)));
+            maxdistance_ = (bitmap.Width / 2) + 1;
             cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
             cors_y_ = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
             distance_ = new ArrayList();
@@ -49,10 +49,15 @@ namespace DescriptionExtractor
             FindBoundary();
             TraceBoundary();
             ComputeFourier();
-            //bitmap_.Save("C:\\result.bmp");
-            //newbitmap_.Save("C:\\result2.bmp");
 
-            return fourier_;
+            double[] result = new double[quantized_];
+
+            for (int i = 0; i < quantized_; i++)
+            {
+                result[i] = fourier_[i];
+            }
+
+            return result;
         }
 
         // Computes fourier descriptor
@@ -102,7 +107,7 @@ namespace DescriptionExtractor
             for (int z = 0; z < maxcount_ && !finished; z++)
             {
                 NextPixel(ref next, prev_x, prev_y, current_x, current_y);
-                distance_.Add((double)(Math.Sqrt(Math.Pow(center_x_ - current_x, 2) + Math.Pow(center_y_ - current_y, 2))/* / maxdistance_ */));
+                distance_.Add((double)(Math.Sqrt(Math.Pow(center_x_ - current_x, 2) + Math.Pow(center_y_ - current_y, 2)) / maxdistance_ ));
                 prev_x = current_x;
                 prev_y = current_y;
                 current_x = next[0];
