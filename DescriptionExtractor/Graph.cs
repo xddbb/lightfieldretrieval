@@ -51,5 +51,14 @@ namespace DescriptionExtractor
 			adjacency[i, j] = true;
 			adjacency[j, i] = true;
 		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="i"></param>
+		/// <returns></returns>
+		public int[] GetAdjacent(int i)
+		{
+		}
 	}
 }
