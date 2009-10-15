@@ -49,10 +49,10 @@ namespace DescriptionExtractor
             FindBoundary();
             TraceBoundary();
             ComputeFourier();
-            bitmap_.Save("C:\\result.bmp");
-            newbitmap_.Save("C:\\result2.bmp");
+            //bitmap_.Save("C:\\result.bmp");
+            //newbitmap_.Save("C:\\result2.bmp");
 
-            int i = 0;
+            return fourier_;
         }
 
         // Computes fourier descriptor

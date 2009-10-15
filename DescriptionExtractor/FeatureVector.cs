@@ -8,7 +8,7 @@ namespace DescriptionExtractor
     public struct FeatureVector
     {
         public double[] zernike;
-        public float[] fourier;
+        public double[] fourier;
     }
 
     public struct FeatureCollection
