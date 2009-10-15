@@ -70,7 +70,7 @@ namespace DescriptionExtractor
 			adjc = 0;
 			for (int j = 0; j < count; j++)
 				if (adjacency[i, j])
-					adj[adjc++] = adjacency[i, j];
+					adj[adjc++] = j;
 
 			// All fine
 			return adj;
