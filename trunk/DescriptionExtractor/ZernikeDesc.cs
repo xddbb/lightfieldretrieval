@@ -285,9 +285,11 @@ namespace DescriptionExtractor
             }
             			
 			// Debug tool
+			/*
             Bitmap bmp = Reconstruct(Z);
             bmp.Save("zernike" + c++ + ".png"); 			
-                       
+            */
+         
             return coef;
         }
     }
