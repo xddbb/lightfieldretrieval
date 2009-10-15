@@ -59,6 +59,21 @@ namespace DescriptionExtractor
 		/// <returns></returns>
 		public int[] GetAdjacent(int i)
 		{
+			// Count first
+			int adjc = 0;
+			for (int j = 0; j < count; j++)
+				if (adjacency[i, j])
+					adjc++;
+
+			// Fill up then
+			int[] adj = new int[adjc];
+			adjc = 0;
+			for (int j = 0; j < count; j++)
+				if (adjacency[i, j])
+					adj[adjc++] = adjacency[i, j];
+
+			// All fine
+			return adj;
 		}
 	}
 }
