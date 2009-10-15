@@ -54,7 +54,8 @@ namespace DescriptionExtractor
                 Application.Exit();
                 return;
             }
-            //
+
+            // Process input directory
             String dirname = args[1];
             if(!Directory.Exists(dirname))
             {
@@ -62,20 +63,22 @@ namespace DescriptionExtractor
                 Application.Exit();
                 return;
             }
-            directory = new DirectoryInfo(dirname);                                             
-            //            
+            directory = new DirectoryInfo(dirname);
+                                        
+            // Run workers
             imageProcessWorker.RunWorkerAsync();
         }
 
         private void imageProcessWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             /////////////////////////////////////////////////////////////////////////////////
-            // 
+            // Process directory
             /////////////////////////////////////////////////////////////////////////////////
             FileInfo[] files = directory.GetFiles("*.bmp");
             featureCollection = new FeatureCollection();
             featureCollection.featureVectors = new FeatureVector[files.Length];
             ZernikeDesc zernike;
+            FourierDesc fourier;
 
             int i = 0;
             foreach (FileInfo file in files)
@@ -95,11 +98,14 @@ namespace DescriptionExtractor
                 // Extract features
                 /////////////////////////////////////////////////////////////////////////////////
                 zernike = new ZernikeDesc(image);
+                fourier = new FourierDesc(image);
 #if DEBUG
                 Stopwatch stopWatch = new Stopwatch();
                 stopWatch.Start();
 #endif
-                featureCollection.featureVectors[i++].zernike = zernike.Process();
+                featureCollection.featureVectors[i].zernike = zernike.Process();
+                featureCollection.featureVectors[i].fourier = fourier.Process();
+                i++;
 #if DEBUG
                 stopWatch.Stop();
                 // Get the elapsed time as a TimeSpan value.
@@ -115,6 +121,7 @@ namespace DescriptionExtractor
             /////////////////////////////////////////////////////////////////////////////////
             // Save to file
             /////////////////////////////////////////////////////////////////////////////////
+
             // Serialization
             XmlSerializer s = new XmlSerializer(typeof(FeatureCollection));
             TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
