@@ -89,7 +89,7 @@ namespace DescriptionExtractor
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error reding image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Application.Exit();
                 }
                 imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));

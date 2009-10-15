@@ -44,7 +44,7 @@ namespace DescriptionExtractor
 
         // Process bitmap
 
-        public void Process()
+        public double[] Process()
         {
             FindBoundary();
             TraceBoundary();
