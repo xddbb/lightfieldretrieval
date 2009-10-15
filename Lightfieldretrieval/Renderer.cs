@@ -1,3 +1,17 @@
+#region GPL EULA
+// Copyright (c) 2009, Bojan Endrovski, http://furiouspixels.blogspot.com/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published 
+// by the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+#endregion
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +26,6 @@ using Microsoft.Xna.Framework.Net;
 using Microsoft.Xna.Framework.Storage;
 using System.IO;
 
-
-
-
-
 namespace Lightfieldretrieval
 {
     class Renderer : Game
@@ -24,8 +34,27 @@ namespace Lightfieldretrieval
         SpriteBatch spriteBatch;
 
         public String filename;
-        Vector3[] vectors;
-        int[] indices;
+        FileInfo fileinfo;
+        int[] indices;              // Store the indices in a array
+        Vector3[] vectors;          // And the vectors
+        Vector3 center;
+        
+        /// <summary>
+        /// Point of views, half the point of the dodecahedron
+        /// </summary>
+        Vector3[] povs = new Vector3[] {
+            new Vector3(1.0f, 1.0f, 1.0f),
+            new Vector3(-1.0f, 1.0f, 1.0f),
+            new Vector3(-1.0f, 1.0f, -1.0f),
+            new Vector3(1.0f, 1.0f, -1.0f),
+            new Vector3(0.0f, 0.618034f, 1.61803f),
+            new Vector3(0.0f, 0.618034f, -1.61803f),
+            new Vector3(1.0f, 1.61803f, 0.0f),
+            new Vector3(-1.0f, 1.61803f, 0.0f),
+            new Vector3(1.61803f, 0.0f, 0.618034f),
+            new Vector3(-1.61803f, 0.0f, 0.618034f)
+        };
+        int povindex;
 
         Matrix worldMatrix;
         Matrix viewMatrix;
@@ -45,7 +74,6 @@ namespace Lightfieldretrieval
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferHeight = 256;
             graphics.PreferredBackBufferWidth = 256;
-            //graphics.GraphicsDevice.
             Content.RootDirectory = "Content";
         }
 
@@ -66,10 +94,11 @@ namespace Lightfieldretrieval
                 return;
             }
 
-            Vector3 center = Vector3.Zero;
+            center = Vector3.Zero;
             float distance = 0;
             using (StreamReader sr = File.OpenText(filename))
             {
+                fileinfo = new FileInfo(filename);
                 String s = sr.ReadLine();
                 int vertexCount = Int32.Parse(s);
                 //
@@ -133,9 +162,9 @@ namespace Lightfieldretrieval
             // Init graphics stuff
             ///////////////////////////////////////////////////////////////////////////
             worldMatrix = Matrix.Identity;
-            viewMatrix = Matrix.CreateLookAt(new Vector3(3000, 0, 0), center, Vector3.Up);
-            //projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.Pi / 4.0f, 1.0f, 1.0f, 10000.0f);
-            projectionMatrix = Matrix.CreateOrthographic(2 * distance, 2 * distance, 1, 10000);
+            povindex = -1;
+            //viewMatrix = Matrix.CreateLookAt(povs[povindex], center, Vector3.Up);
+            projectionMatrix = Matrix.CreateOrthographic(2 * distance, 2 * distance, -distance, distance );
             //
             basicEffect = new BasicEffect(graphics.GraphicsDevice, null);
             basicEffect.EnableDefaultLighting();
@@ -174,6 +203,7 @@ namespace Lightfieldretrieval
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            /*
             // Allows the game to exit
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
@@ -201,6 +231,7 @@ namespace Lightfieldretrieval
             }
 
             // TODO: Add your update logic here
+            */
 
             base.Update(gameTime);
         }
@@ -211,8 +242,10 @@ namespace Lightfieldretrieval
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.White);
+            povindex++;
+            viewMatrix = Matrix.CreateLookAt(povs[povindex] + center, center, Vector3.Up);
 
+            GraphicsDevice.Clear(Color.White);
             graphics.GraphicsDevice.VertexDeclaration = basicEffectVertexDeclaration;
             graphics.GraphicsDevice.Vertices[0].SetSource(vertexBuffer, 0, VertexPositionColor.SizeInBytes);
             graphics.GraphicsDevice.Indices = indexBuffer;
@@ -230,10 +263,6 @@ namespace Lightfieldretrieval
             {
                 pass.Begin();
                 graphics.GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, vectors.Length, 0, indices.Length / 3);
-                //graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.PointList, modelVertices, 0, modelVertices.Length);
-
-                //graphics.GraphicsDevice.DrawUserIndexedPrimitives<VertexPositionColor>( PrimitiveType.TriangleList, , 0, vectors.Length, 0, 12);
-                //
                 pass.End();
             }
             basicEffect.End();
@@ -249,14 +278,10 @@ namespace Lightfieldretrieval
                 graphics.GraphicsDevice.PresentationParameters.BackBufferFormat);
 
             graphics.GraphicsDevice.ResolveBackBuffer(renderTargetTexture);
-            renderTargetTexture.GenerateMipMaps(TextureFilter.Linear);
-            renderTargetTexture.Save("thaview.bmp", ImageFileFormat.Bmp);
-            //
-            this.Exit();
-
-            //graphics.GraphicsDevice.DepthStencilBuffer.
-            // graphics.GraphicsDevice.ResolveBackBuffer
+            renderTargetTexture.Save(fileinfo.FullName + povindex + ".bmp", ImageFileFormat.Bmp);
             
+            if (povindex >= povs.Length - 1)
+                this.Exit();                
         }
     }
 }
