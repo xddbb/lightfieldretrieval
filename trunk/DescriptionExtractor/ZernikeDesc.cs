@@ -1,4 +1,18 @@
-﻿using System;
+﻿#region GPL EULA
+// Copyright (c) 2009, Bojan Endrovski, http://furiouspixels.blogspot.com/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published 
+// by the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,18 +22,34 @@ using System.Threading;
 namespace DescriptionExtractor
 {
     public class ZernikeDesc
-    {       
-        //static Dictionary<Pair<int, int>, Polynomial> zernikePolynomials;
-        static Dictionary<String, Polynomial> zernikePolynomials = new Dictionary<string,Polynomial>();
-        protected int[,] bmap;  // Memory if fastest when word addressable anyhow...
+    {   
+		// Cache the polinomials to cut down on repeative calculation
+        protected static Dictionary<String, Polynomial> zernikePolynomials = new Dictionary<string,Polynomial>();
+
+		// Memory if fastest when word addressable anyhow :)
+		// Can be optimized to an actual bit-map
+        protected int[,] bmap;
+		
+		// Input must be a square bitmap
         protected int N;
 
+		// Maximal order of the Zernike coefs
+		protected static int order = 20;
+
+		/// <summary>
+		/// Creates a Zernike descriptor for the given bitmap
+		/// </summary>
+		/// <param name="bitmap">The given bitmap</param>
         public ZernikeDesc(Bitmap bitmap)
         {
+			// Only square!
             if(bitmap.Height != bitmap.Width)
                 throw new InvalidOperationException("Bitmap not rectangular!");
+
             N = bitmap.Height;
             //
+			// Placing to local memory and removing calls to GetPixel dramaticaly improves
+			// perfomance, 20-30x
             bmap = new int[N, N];
             for (int y = 0; y < bitmap.Height; y++)
             {
@@ -33,7 +63,7 @@ namespace DescriptionExtractor
                     else
                     {
                         Color c = bitmap.GetPixel(x, y);
-                        if ((c.A + c.R + c.G + c.B) == 1020)            // White is background
+                        if ((c.A + c.R + c.G + c.B) == 1020)            // White is background (also inverts)
                             bit = 0;
                         else
                             bit = 1;
@@ -43,6 +73,23 @@ namespace DescriptionExtractor
             }
         }
 
+		/// <summary>
+		/// Hides the implentation of the image access
+		/// </summary>
+		/// <param name="x">x coord</param>
+		/// <param name="y">y coord</param>
+		/// <returns>The image color of the [x, y] pixel</returns>
+		private int I(int x, int y)
+		{
+			return bmap[x, y];
+		}
+
+		#region Static Tools
+
+		/// <summary>
+		/// Factorial function
+		/// </summary>
+		/// <returns>The factorial of n</returns>
         private static double Factorial(int n)
         {
             double f = 1;
@@ -52,6 +99,9 @@ namespace DescriptionExtractor
             return f;
         }
 
+		/// <summary>
+		/// Absolute value, now for integers
+		/// </summary>
         private static int abs(int a)
         {
             if (a < 0)
@@ -59,11 +109,9 @@ namespace DescriptionExtractor
             return a;
         }
 
-        private int I(int x, int y)
-        {
-            return bmap[x, y];
-        }
-
+		/// <summary>
+		/// Zernike polynomial of order n,m in a simple polynomial form
+		/// </summary>		
         private static Polynomial RadialPolynomial(int n, int m)
         {
             if (n == 0)
@@ -88,9 +136,14 @@ namespace DescriptionExtractor
             return radialPoly;
         }
 
-
+		/// <summary>
+		/// Zernike polynomial of order n,m for rho
+		/// </summary>		
+		/// <returns>The value of the polynomial at rho</returns>
         private static double RadialPolynomial(int n, int m, double rho)
         {
+			// All of the calculations for the Zernike moments use the same polynomials (as weight functions),
+			// so we cache the relusting polynomial for later use (speedup 2.5x for 10-th order)
             String key = "" + m + n;
             Polynomial poly;
             if(zernikePolynomials.ContainsKey(key))
@@ -101,24 +154,35 @@ namespace DescriptionExtractor
             {
                 poly = RadialPolynomial(n, m);
                 zernikePolynomials[key] = poly;
-#if DEBUG
-                Console.WriteLine("Polynomial R(" + n + "," + m + "): " + poly + " added to cache.");
-#endif
+				#if DEBUG
+					Console.WriteLine("Polynomial R(" + n + "," + m + "): " + poly + " added to cache.");
+				#endif
             }
             //
             return poly.Value(rho);
         }
 
-		private Complex V(int n, int m, double rho, double theta)
+		/// <summary>
+		/// Syntactic sugar for the term V in the formula for the Zernike moments
+		/// </summary>	
+		private static Complex V(int n, int m, double rho, double theta)
 		{
+			double radial = RadialPolynomial(n, m, rho);
+			double r = radial * Math.Cos(m * theta);
+			double i = radial * Math.Sin(m * theta);
+			return new Complex(r, i);
 		}
 
-        private Complex ZernikeMoment(int n, int m)
+		#endregion Static Tools
+
+		/// <summary>
+		/// Zernike moment of order n,m for the given bitmap
+		/// </summary>
+		private Complex ZernikeMoment(int n, int m)
         {
-            double zr = 0;                  // Real part
-            double zi = 0;                  // Imaginary part
             double cnt = 0;                 // TODO: The normalization value is subject to change
             //
+			Complex sum = new Complex(0.0, 0.0);
             for (int y = 0; y < N; y++)
             {
                 for (int x = 0; x < N; x++)
@@ -128,28 +192,26 @@ namespace DescriptionExtractor
                     double rho = Math.Sqrt( xn * xn + yn * yn ) / N;        // Go polar, Rho
                     if (rho <= 1.0)
                     {
-                        double radial = RadialPolynomial(n, m, rho);
-                        double theta = Math.Atan(yn / xn);                  // Go polar, Theta
-                        zr += I(x, y) * radial * Math.Cos(m * theta);
-                        zi += I(x, y) * radial * Math.Sin(m * theta);
+						//double theta = Math.Atan(yn / xn);                  // Go polar, Theta
+						double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
+						Complex Vc = V(n, m, rho, theta).Conjugate;
+						sum += I(x, y) * Vc;
                         cnt++;
                     }                    
                 }
             }
-            //
-            Complex zm = new Complex(zr, zi);
-            //zm = zm.Conjugate;
-            return zm * (n + 1) / cnt;
-            //return zm * (n + 1) / Math.PI;
+			sum *= (n + 1) / Math.PI;
+			return sum;
         }
 
         private Bitmap Reconstruct(Complex[] Z)
         {
             Bitmap bmp = new Bitmap(N, N);
-
-            double zr = 0;      // Real part
-            double zi = 0;      // Imaginary part
             //
+			double[,] map = new double[N, N];
+			//
+			double	min = 0,
+					max = 0;
             for (int y = 0; y < N; y++)
             {
                 for (int x = 0; x < N; x++)
@@ -157,55 +219,74 @@ namespace DescriptionExtractor
                     double xn = 2 * x - N + 1;                          // Normalized x
                     double yn = N - 1 - 2 * y;                          // Normalized y
                     double rho = Math.Sqrt(xn * xn + yn * yn) / N;      // Go polar, Rho
-                    double theta = Math.Atan(yn / xn);                  // Go polar, Theta
+                    //double theta = Math.Atan(yn / xn);                  // Go polar, Theta
+					double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
                     if (rho <= 1.0)
                     {
+						Complex sum = new Complex(0.0, 0.0);
                         int i = 0;
-                        for (int n = 0; n <= 10; n++)
+                        for (int n = 0; n <= order; n++)
                         {
                             for (int m = -n; m <= n; m += 2)
                             {
-                                double radial = RadialPolynomial(n, m, rho);
-                                zr = radial * Math.Cos(m * theta);
-                                zi = radial * Math.Sin(m * theta);
-                                Complex vnm = new Complex(zr, zi);
-                                Complex znm = Z[i++];
+								Complex znm = Z[i++];
+								Complex vnm = V(n, m, rho, theta);
                                 Complex result = znm * vnm;
-                                //
-                                Color c = Color.FromArgb(
-                                    255,
-                                    (int)(result.Modulus * 255 + 127),
-                                    (int)(result.Real * 255 + 127),
-                                    (int)(result.Imag * 255 + 127));                              
-                                bmp.SetPixel(x, y, c);
+								sum += result;								
                             }
-                        }                        
+                        }
+						//
+						double val = sum.Modulus;
+						if (val < min)
+							min = val;
+						if (val > max)
+							max = val;
+						map[x, y] = val;
                     }
                 }
             }
+			//
+			//
+			for (int y = 0; y < N; y++)
+			{
+				for (int x = 0; x < N; x++)
+				{
+					double val = map[x, y];
+					val = (val - min) / (max - min);
+					int intensity = (int)(val * 255.0);
+					//
+					Color c = Color.FromArgb(255, intensity, intensity, intensity);
+					bmp.SetPixel(x, y, c);
+				}
+			}
 
             return bmp;
         }
 
         static int c = 0;
+		/// <summary>
+		/// Porcesses the bitmap, extracting the Zernike moments up to the n-th order (defined in class)
+		/// </summary>
+		/// <returns>Sequence of the modulos of the complex Zernike moments</returns>
         public double[] Process()
         {                         
-            double[] coef = new double[100];
+            double[] coef = new double[order * order];
             //
-            Complex[] Z = new Complex[100];
+            Complex[] Z = new Complex[order * order];
             int i = 0;
-            for (int n = 0; n <= 10; n++)
+            for (int n = 0; n <= order; n++)
             {
                 for (int m = -n; m <= n; m += 2)
                 {                    
-                    Z[i] = ZernikeMoment(n, m).Conjugate;
+                    Z[i] = ZernikeMoment(n, m);
                     coef[i] = Z[i].Modulus;
                     i++;
                 }
             }
-            
+            			
+			// Debug tool
             Bitmap bmp = Reconstruct(Z);
-            bmp.Save("zernike" + c++ + ".png"); 
+            bmp.Save("zernike" + c++ + ".png"); 			
                        
             return coef;
         }
