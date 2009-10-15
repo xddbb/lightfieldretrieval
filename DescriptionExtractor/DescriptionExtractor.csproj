@@ -48,7 +48,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArrayMath.cs" />
+    <Compile Include="ChirpFFT.cs" />
     <Compile Include="Complex.cs" />
+    <Compile Include="Complex2.cs" />
+    <Compile Include="FastHartleyTransform.cs" />
     <Compile Include="FeatureVector.cs" />
     <Compile Include="FourierDesc.cs" />
     <Compile Include="MainWindow.cs">

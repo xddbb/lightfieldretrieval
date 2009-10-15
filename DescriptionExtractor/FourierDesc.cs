@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using System.Collections;
+using Altaxo.Calc.Fourier;
 
 namespace DescriptionExtractor
 {
@@ -18,22 +20,26 @@ namespace DescriptionExtractor
         private int[] cors_y_;
         private double center_x_;
         private double center_y_;
-        private double[] distance_;
-
-
+        private double maxdistance_;
+        private ArrayList distance_;
+        private int quantized_;
+        private double[] fourier_;
+        
         // Constructor
 
         public FourierDesc(Bitmap bitmap)
         {
             shapeColor = Color.Black;
             bitmap_ = bitmap;
-            maxcount_ = 3000;
+            maxcount_ = 4096;
+            quantized_ = 10;
             newbitmap_ = new Bitmap(bitmap.Height, bitmap.Width);
             center_x_ = bitmap.Width / 2;
             center_y_ = bitmap.Height / 2;
+            maxdistance_ = (double)(Math.Sqrt(Math.Pow(center_x_, 2) + Math.Pow(center_y_, 2)));
             cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
             cors_y_ = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
-            distance_ = new double[3000];
+            distance_ = new ArrayList();
         }
 
         // Process bitmap
@@ -45,13 +51,39 @@ namespace DescriptionExtractor
             ComputeFourier();
             bitmap_.Save("C:\\result.bmp");
             newbitmap_.Save("C:\\result2.bmp");
+
+            int i = 0;
         }
 
         // Computes fourier descriptor
 
         private void ComputeFourier()
         {
-            int g = 0;
+            int size = distance_.Count;
+            fourier_ = new double[size];
+            double[] temp = new double[size];
+
+            int z = 0;
+
+            foreach (Object obj in distance_)
+            {
+                fourier_[z] = Convert.ToDouble(obj);
+                z++;
+            }
+
+            ChirpFFT.FFT(fourier_, temp, FourierDirection.Forward);
+
+            for (int k = 0; k <= size / 2; k++)
+            {
+                double sumreal = fourier_[k];
+                double sumimag = temp[k];
+
+                if (k != 0 && (k + k) != size)
+                {
+                    fourier_[size - k] = sumimag;
+                }
+                fourier_[k] = sumreal;
+            }
         }
 
         // Traces boundary of bitmap
@@ -70,7 +102,7 @@ namespace DescriptionExtractor
             for (int z = 0; z < maxcount_ && !finished; z++)
             {
                 NextPixel(ref next, prev_x, prev_y, current_x, current_y);
-                distance_[z] = Math.Sqrt(Math.Pow(center_x_ - current_x, 2) + Math.Pow(center_y_ - current_y, 2));
+                distance_.Add((double)(Math.Sqrt(Math.Pow(center_x_ - current_x, 2) + Math.Pow(center_y_ - current_y, 2))/* / maxdistance_ */));
                 prev_x = current_x;
                 prev_y = current_y;
                 current_x = next[0];
