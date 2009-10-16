@@ -33,7 +33,7 @@ namespace DescriptionExtractor
             shapeColor = Color.Black;
             bitmap_ = bitmap;
             maxcount_ = 4096;
-            coefficients_ = 10;
+            coefficients_ = 60;
             boundary_sum_x_ = 0D;
             boundary_sum_y_ = 0D;
             boundary_x_ = new int[maxcount_];
