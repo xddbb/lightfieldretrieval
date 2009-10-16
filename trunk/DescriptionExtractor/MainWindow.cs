@@ -24,6 +24,7 @@ using System.IO;
 using System.Xml.Serialization;
 using System.Threading;
 using System.Diagnostics;
+using System.Collections;
 
 namespace DescriptionExtractor
 {
@@ -36,6 +37,7 @@ namespace DescriptionExtractor
         */ 
         FeatureCollection featureCollection;
         DirectoryInfo directory;
+        BaseReader reader;
 
         public MainWindow()
         {
@@ -63,7 +65,17 @@ namespace DescriptionExtractor
                 Application.Exit();
                 return;
             }
-            directory = new DirectoryInfo(dirname);
+
+            // Check if file exists
+            if (!File.Exists(dirname + "/basenames"))
+            {
+                MessageBox.Show("Basenames file does not exist", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
+                return;
+            }
+
+            // Get list of all directory and model files
+            reader = new BaseReader(dirname, "basenames");
                                         
             // Run workers
             imageProcessWorker.RunWorkerAsync();
@@ -71,62 +83,79 @@ namespace DescriptionExtractor
 
         private void imageProcessWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            /////////////////////////////////////////////////////////////////////////////////
-            // Process directory
-            /////////////////////////////////////////////////////////////////////////////////
-            FileInfo[] files = directory.GetFiles("*.bmp");
-            featureCollection = new FeatureCollection();
-            featureCollection.featureVectors = new FeatureVector[files.Length];
             ZernikeDesc zernike;
             FourierDesc fourier;
 
-            int i = 0;
-            foreach (FileInfo file in files)
+            ICollection keyCol = reader.dirs.Keys;
+
+            foreach (string dirname in keyCol)
             {
-                try
+                if (Directory.Exists(dirname))
                 {
-                    image = new Bitmap(file.FullName);
-                }
-                catch (Exception)
-                {
-                    MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Application.Exit();
-                }
-                imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
+                    /////////////////////////////////////////////////////////////////////////////////
+                    // Process directory
+                    /////////////////////////////////////////////////////////////////////////////////
 
-                /////////////////////////////////////////////////////////////////////////////////
-                // Extract features
-                /////////////////////////////////////////////////////////////////////////////////
-                zernike = new ZernikeDesc(image);
-                fourier = new FourierDesc(image);
+                    directory = new DirectoryInfo(dirname);
+                    FileInfo[] files = directory.GetFiles("*.bmp");
+
+                    if (files.Length > 0)
+                    {
+                        featureCollection = new FeatureCollection();
+                        featureCollection.featureVectors = new FeatureVector[files.Length];
+
+                        int i = 0;
+                        foreach (FileInfo file in files)
+                        {
+                            try
+                            {
+                                image = new Bitmap(file.FullName);
+                            }
+                            catch (Exception)
+                            {
+                                MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                Application.Exit();
+                            }
+                            imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
+
+                            /////////////////////////////////////////////////////////////////////////////////
+                            // Extract features
+                            /////////////////////////////////////////////////////////////////////////////////
+
+                            zernike = new ZernikeDesc(image);
+                            fourier = new FourierDesc(image);
 #if DEBUG
-                Stopwatch stopWatch = new Stopwatch();
-                stopWatch.Start();
+                            Stopwatch stopWatch = new Stopwatch();
+                            stopWatch.Start();
 #endif
-                featureCollection.featureVectors[i].zernike = zernike.Process();
-                featureCollection.featureVectors[i].fourier = fourier.Process();
-                i++;
+                            featureCollection.featureVectors[i].zernike = zernike.Process();
+                            featureCollection.featureVectors[i].fourier = fourier.Process();
+                            i++;
 #if DEBUG
-                stopWatch.Stop();
-                // Get the elapsed time as a TimeSpan value.
-                TimeSpan ts = stopWatch.Elapsed;
+                            stopWatch.Stop();
+                            // Get the elapsed time as a TimeSpan value.
+                            TimeSpan ts = stopWatch.Elapsed;
 
-                // Format and display the TimeSpan value.
-                string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds );
-                Console.WriteLine("Processed image " + file + " in " + elapsedTime);
-#endif                
+                            // Format and display the TimeSpan value.
+                            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+                            Console.WriteLine("Processed image " + file + " in " + elapsedTime);
+#endif
+                        }
+
+                        imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
+
+                        /////////////////////////////////////////////////////////////////////////////////
+                        // Save to file
+                        /////////////////////////////////////////////////////////////////////////////////
+
+                        // Serialization
+                        XmlSerializer s = new XmlSerializer(typeof(FeatureCollection));
+                        TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
+                        s.Serialize(w, featureCollection);
+                        w.Close();
+                    }
+                }
             }
-            imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
-
-            /////////////////////////////////////////////////////////////////////////////////
-            // Save to file
-            /////////////////////////////////////////////////////////////////////////////////
-
-            // Serialization
-            XmlSerializer s = new XmlSerializer(typeof(FeatureCollection));
-            TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
-            s.Serialize(w, featureCollection);
-            w.Close();
 
             /*
             // Deserialization
@@ -135,6 +164,10 @@ namespace DescriptionExtractor
             newList = (ShoppingList)s.Deserialize( r );
             r.Close();
             */
+
+            // Exit
+            Application.Exit();
+            return;
         }
 
         private void imageProcessWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)

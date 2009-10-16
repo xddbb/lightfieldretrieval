@@ -41,7 +41,6 @@ namespace DescriptionExtractor
             newbitmap_ = new Bitmap(bitmap.Height, bitmap.Width);
             cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
             cors_y_ = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
-
         }
 
         // Process bitmap
