@@ -19,20 +19,26 @@ using System.Text;
 
 namespace DescriptionExtractor
 {
-    public class Pair<TFist, TSecond>
-    {
-        private TFist first;
-        public TFist First
-        {
-            get { return first; }
-            set { first = value; }
-        }
+	public class Pair<TFirst, TSecond>
+	{
+		private TFirst first;
+		public TFirst First
+		{
+			get { return first; }
+			set { first = value; }
+		}
 
-        private TSecond second;
-        public TSecond Second
-        {
-            get { return second; }
-            set { second = value; }
-        }
-    }
+		private TSecond second;
+		public TSecond Second
+		{
+			get { return second; }
+			set { second = value; }
+		}
+
+		public Pair(TFirst f, TSecond s)
+		{
+			first = f;
+			second = s;
+		}
+	}
 }
