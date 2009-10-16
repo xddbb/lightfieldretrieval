@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Collections;
-using Altaxo.Calc.Fourier;
 
 namespace DescriptionExtractor
 {
@@ -23,8 +22,9 @@ namespace DescriptionExtractor
         private int[] boundary_x_;
         private int[] boundary_y_;
         private int boundary_count_;
-        private int coefficients_;
+        private Complex[] complex_;
         private double[] fourier_;
+        private int coefficients_;
         
         // Constructor
 
@@ -67,21 +67,12 @@ namespace DescriptionExtractor
 
         private void ComputeFourier()
         {
-            int size = fourier_.Length;
-            double[] temp = new double[size];
+            Fourier.FourierTransform.DFT(complex_, Fourier.FourierDirection.Forward);
 
-            ChirpFFT.FFT(fourier_, temp, FourierDirection.Forward);
-
-            for (int k = 0; k <= size / 2; k++)
+            // Compute absolute value
+            for (int i = 0; i < boundary_count_; i++)
             {
-                double sumreal = fourier_[k];
-                double sumimag = temp[k];
-
-                if (k != 0 && (k + k) != size)
-                {
-                    fourier_[size - k] = sumimag;
-                }
-                fourier_[k] = sumreal;
+                fourier_[i] = Math.Sqrt(Math.Pow(complex_[i].real, 2) + Math.Pow(complex_[i].imag, 2));
             }
         }
 
@@ -89,13 +80,17 @@ namespace DescriptionExtractor
 
         private void ComputeCentroidDistance()
         {
+            complex_ = new Complex[boundary_count_];
             fourier_ = new double[boundary_count_];
+
+            // Reposition center
             double center_x = boundary_sum_x_ / boundary_count_;
             double center_y = boundary_sum_y_ / boundary_count_;
 
+            // Fill up complex array
             for (int i = 0; i < boundary_count_; i++)
             {
-                fourier_[i] = (double)(Math.Sqrt(Math.Pow(center_x - boundary_x_[i], 2) + Math.Pow(center_y - boundary_y_[i], 2)));
+                complex_[i] = new Complex((double)(Math.Sqrt(Math.Pow(center_x - boundary_x_[i], 2) + Math.Pow(center_y - boundary_y_[i], 2))),0);
             }
         }
 
