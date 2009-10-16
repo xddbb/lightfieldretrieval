@@ -146,8 +146,8 @@ namespace DescriptionExtractor
 
         #endregion
 
-        double real;
-        double imag;
+        public double real;
+        public double imag;
 
         #region Constructors and Constants
 
@@ -524,8 +524,6 @@ namespace DescriptionExtractor
             }
         }
 
-        #endregion
-
         /// <summary>
         /// Gets or sets the conjugate of this <c>Complex</c>.
         /// </summary>
@@ -546,6 +544,8 @@ namespace DescriptionExtractor
             get { return new Complex(real, -imag); }
             set { this = value.Conjugate; }
         }
+
+        #endregion
 
         #region Equality & Hashing
 
@@ -766,7 +766,6 @@ namespace DescriptionExtractor
         }
 
         #endregion
-
 
         #region Trigonometric Functions
 
@@ -1051,7 +1050,6 @@ namespace DescriptionExtractor
 
         #endregion
 
-
         #region Exponential Functions
 
         /// <summary>
@@ -1187,7 +1185,6 @@ namespace DescriptionExtractor
         }
 
         #endregion
-
 
         #region ToString and Parse
 
