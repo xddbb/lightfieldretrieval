@@ -18,11 +18,12 @@ namespace DescriptionExtractor
         private int start_y_;
         private int[] cors_x_;
         private int[] cors_y_;
-        private double center_x_;
-        private double center_y_;
-        private int maxdistance_;
-        private ArrayList distance_;
-        private int quantized_;
+        private double boundary_sum_x_;
+        private double boundary_sum_y_;
+        private int[] boundary_x_;
+        private int[] boundary_y_;
+        private int boundary_count_;
+        private int coefficients_;
         private double[] fourier_;
         
         // Constructor
@@ -32,14 +33,15 @@ namespace DescriptionExtractor
             shapeColor = Color.Black;
             bitmap_ = bitmap;
             maxcount_ = 4096;
-            quantized_ = 20;
+            coefficients_ = 10;
+            boundary_sum_x_ = 0D;
+            boundary_sum_y_ = 0D;
+            boundary_x_ = new int[maxcount_];
+            boundary_y_ = new int[maxcount_];
             newbitmap_ = new Bitmap(bitmap.Height, bitmap.Width);
-            center_x_ = bitmap.Width / 2;
-            center_y_ = bitmap.Height / 2;
-            maxdistance_ = (bitmap.Width / 2) + 1;
             cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
             cors_y_ = new int[8] { -1, 0, 1, 1, 1, 0, -1, -1 };
-            distance_ = new ArrayList();
+
         }
 
         // Process bitmap
@@ -48,13 +50,14 @@ namespace DescriptionExtractor
         {
             FindBoundary();
             TraceBoundary();
+            ComputeCentroidDistance();
             ComputeFourier();
 
-            double[] result = new double[quantized_];
+            double[] result = new double[coefficients_];
 
-            for (int i = 0; i < quantized_; i++)
+            for (int i = 0; i < coefficients_; i++)
             {
-                result[i] = fourier_[i];
+                result[i] = Math.Abs(fourier_[i + 1]) / Math.Abs(fourier_[0]);
             }
 
             return result;
@@ -64,17 +67,8 @@ namespace DescriptionExtractor
 
         private void ComputeFourier()
         {
-            int size = distance_.Count;
-            fourier_ = new double[size];
+            int size = fourier_.Length;
             double[] temp = new double[size];
-
-            int z = 0;
-
-            foreach (Object obj in distance_)
-            {
-                fourier_[z] = Convert.ToDouble(obj);
-                z++;
-            }
 
             ChirpFFT.FFT(fourier_, temp, FourierDirection.Forward);
 
@@ -91,6 +85,20 @@ namespace DescriptionExtractor
             }
         }
 
+        // Computes the center and centroid distance
+
+        private void ComputeCentroidDistance()
+        {
+            fourier_ = new double[boundary_count_];
+            double center_x = boundary_sum_x_ / boundary_count_;
+            double center_y = boundary_sum_y_ / boundary_count_;
+
+            for (int i = 0; i < boundary_count_; i++)
+            {
+                fourier_[i] = (double)(Math.Sqrt(Math.Pow(center_x - boundary_x_[i], 2) + Math.Pow(center_y - boundary_y_[i], 2)));
+            }
+        }
+
         // Traces boundary of bitmap
 
         private void TraceBoundary()
@@ -104,10 +112,16 @@ namespace DescriptionExtractor
             int[] next = new int[2];
             
             // Trace pixel
-            for (int z = 0; z < maxcount_ && !finished; z++)
+            for (int i = 0; i < maxcount_ && !finished; i++)
             {
                 NextPixel(ref next, prev_x, prev_y, current_x, current_y);
-                distance_.Add((double)(Math.Sqrt(Math.Pow(center_x_ - current_x, 2) + Math.Pow(center_y_ - current_y, 2)) / maxdistance_ ));
+
+                boundary_x_[i] = current_x;
+                boundary_y_[i] = current_y;
+                boundary_sum_x_ += current_x;
+                boundary_sum_y_ += current_y;
+                boundary_count_++;
+
                 prev_x = current_x;
                 prev_y = current_y;
                 current_x = next[0];
