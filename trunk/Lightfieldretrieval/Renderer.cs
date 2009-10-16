@@ -42,18 +42,47 @@ namespace Lightfieldretrieval
         /// <summary>
         /// Point of views, half the point of the dodecahedron
         /// </summary>
-        Vector3[] povs = new Vector3[] {
-            new Vector3(1.0f, 1.0f, 1.0f),
-            new Vector3(-1.0f, 1.0f, 1.0f),
-            new Vector3(-1.0f, 1.0f, -1.0f),
-            new Vector3(1.0f, 1.0f, -1.0f),
-            new Vector3(0.0f, 0.618034f, 1.61803f),
-            new Vector3(0.0f, 0.618034f, -1.61803f),
-            new Vector3(1.0f, 1.61803f, 0.0f),
-            new Vector3(-1.0f, 1.61803f, 0.0f),
-            new Vector3(1.61803f, 0.0f, 0.618034f),
-            new Vector3(-1.61803f, 0.0f, 0.618034f)
+		///
+
+		/*
+
+		Vector3[] povs = new Vector3[] {
+            new Vector3(-1.37638f, 0.0f, 0.262866f),
+			new Vector3(1.37638f, 0.0f, -0.262866f),
+			new Vector3(-0.425325f, -1.30902f, 0.262866f),
+			new Vector3(-0.425325f, 1.30902f, 0.262866f),
+			new Vector3(1.11352f, -0.809017f, 0.262866f),
+			new Vector3(1.11352f, 0.809017f, 0.262866f),
+			new Vector3(-0.262866f, -0.809017f, 1.11352f),
+			new Vector3(-0.262866f, 0.809017f, 1.11352f),
+			new Vector3(-0.688191f, -0.5f, -1.11352f),
+			new Vector3(-0.688191f, 0.5f, -1.11352f),
+			new Vector3(0.688191f, -0.5f, 1.11352f),
+			new Vector3(0.688191f, 0.5f, 1.11352f),
+			new Vector3(0.850651f, 0.0f, -1.11352f),
+			new Vector3(-1.11352f, -0.809017f, -0.262866f),
+			new Vector3(-1.11352f, 0.809017f, -0.262866f),
+			new Vector3(-0.850651f, 0.0f, 1.11352f),
+			new Vector3(0.262866f, -0.809017f, -1.11352f),
+			new Vector3(0.262866f, 0.809017f, -1.11352f),
+			new Vector3(0.425325f, -1.30902f, -0.262866f),
+			new Vector3(0.425325f, 1.30902f, -0.262866f)
         };
+		*/
+
+		Vector3[] povs = new Vector3[] {
+			new Vector3(-1.37638f, 0.0f, 0.262866f),
+			new Vector3(-0.425325f, -1.30902f, 0.262866f),
+			new Vector3(-0.425325f, 1.30902f, 0.262866f),
+			new Vector3(1.11352f, -0.809017f, 0.262866f),
+			new Vector3(1.11352f, 0.809017f, 0.262866f),
+			new Vector3(-0.262866f, -0.809017f, 1.11352f),
+			new Vector3(-0.262866f, 0.809017f, 1.11352f),
+			new Vector3(0.688191f, 0.5f, 1.11352f),
+			new Vector3(0.688191f, -0.5f, 1.11352f),
+			new Vector3(-0.850651f, 0.0f, 1.11352f),
+		};
+
         int povindex;
 
         Matrix worldMatrix;

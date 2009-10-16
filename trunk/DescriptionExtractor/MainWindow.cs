@@ -31,11 +31,7 @@ namespace DescriptionExtractor
     public partial class MainWindow : Form
     {
         Bitmap image;
-        /*
-        ZernikeDesc zernike;
-        FeatureVector featureVector;
-        */ 
-        FeatureCollection featureCollection;
+		LightFieldDescriptor lfdcs;		
         DirectoryInfo directory;
         BaseReader reader;
 
@@ -83,6 +79,10 @@ namespace DescriptionExtractor
 
         private void imageProcessWorker_DoWork(object sender, DoWorkEventArgs e)
         {
+            /////////////////////////////////////////////////////////////////////////////////
+            // Process directory
+            /////////////////////////////////////////////////////////////////////////////////
+            //FileInfo[] files = directory.GetFiles("*.bmp");			      
             ZernikeDesc zernike;
             FourierDesc fourier;
 
@@ -101,8 +101,8 @@ namespace DescriptionExtractor
 
                     if (files.Length > 0)
                     {
-                        featureCollection = new FeatureCollection();
-                        featureCollection.featureVectors = new FeatureVector[files.Length];
+						lfdcs = new LightFieldDescriptor();
+						lfdcs.imageFeatures = new FeatureVector[files.Length];
 
                         int i = 0;
                         foreach (FileInfo file in files)
@@ -124,22 +124,24 @@ namespace DescriptionExtractor
 
                             zernike = new ZernikeDesc(image);
                             fourier = new FourierDesc(image);
-#if DEBUG
-                            Stopwatch stopWatch = new Stopwatch();
-                            stopWatch.Start();
-#endif
-                            featureCollection.featureVectors[i].zernike = zernike.Process();
-                            featureCollection.featureVectors[i].fourier = fourier.Process();
-                            i++;
-#if DEBUG
-                            stopWatch.Stop();
-                            // Get the elapsed time as a TimeSpan value.
-                            TimeSpan ts = stopWatch.Elapsed;
+							#if DEBUG
+								Stopwatch stopWatch = new Stopwatch();
+								stopWatch.Start();
+							#endif
 
-                            // Format and display the TimeSpan value.
-                            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
-                            Console.WriteLine("Processed image " + file + " in " + elapsedTime);
-#endif
+							lfdcs.imageFeatures[i].zernike = zernike.Process();
+							lfdcs.imageFeatures[i].fourier = fourier.Process();
+							i++;
+
+							#if DEBUG
+								stopWatch.Stop();
+								// Get the elapsed time as a TimeSpan value.
+								TimeSpan ts = stopWatch.Elapsed;
+
+								// Format and display the TimeSpan value.
+								string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+								Console.WriteLine("Processed image " + file + " in " + elapsedTime);
+							#endif
                         }
 
                         imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
@@ -149,9 +151,9 @@ namespace DescriptionExtractor
                         /////////////////////////////////////////////////////////////////////////////////
 
                         // Serialization
-                        XmlSerializer s = new XmlSerializer(typeof(FeatureCollection));
+                        XmlSerializer s = new XmlSerializer(typeof(LightFieldDescriptor));
                         TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
-                        s.Serialize(w, featureCollection);
+                        s.Serialize(w, lfdcs);
                         w.Close();
                     }
                 }
