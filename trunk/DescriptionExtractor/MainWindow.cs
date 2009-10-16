@@ -87,7 +87,7 @@ namespace DescriptionExtractor
                 {
                     image = new Bitmap(file.FullName);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Application.Exit();
