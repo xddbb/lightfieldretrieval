@@ -85,7 +85,6 @@ namespace DescriptionExtractor
             //FileInfo[] files = directory.GetFiles("*.bmp");			      
             ZernikeDesc zernike;
             FourierDesc fourier;
-
             ICollection keyCol = reader.dirs.Keys;
 
             foreach (string dirname in keyCol)
