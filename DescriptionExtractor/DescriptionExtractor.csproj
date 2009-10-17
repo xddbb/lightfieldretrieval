@@ -69,7 +69,6 @@
     <Compile Include="FeatureVector.cs" />
     <Compile Include="Fourier.cs" />
     <Compile Include="FourierDesc.cs" />
-    <Compile Include="Graph.cs" />
     <Compile Include="MainWindow.cs">
       <SubType>Form</SubType>
     </Compile>
