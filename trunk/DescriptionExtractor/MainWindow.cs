@@ -158,14 +158,6 @@ namespace DescriptionExtractor
                 }
             }
 
-            /*
-            // Deserialization
-            ShoppingList newList;
-            TextReader r = new StreamReader( "list.xml" );
-            newList = (ShoppingList)s.Deserialize( r );
-            r.Close();
-            */
-
             // Exit
             Application.Exit();
             return;
