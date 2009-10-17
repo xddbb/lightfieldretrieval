@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using DescriptionExtractor;
 
 namespace Lightfieldretrieval
 {
@@ -34,7 +35,7 @@ namespace Lightfieldretrieval
 
             int i = 0;
             foreach( DictionaryEntry de in reader.dirs ){
-                if (i == 0)
+                //if (i == 0)
                 {
                     using (Renderer game = new Renderer())
                     {

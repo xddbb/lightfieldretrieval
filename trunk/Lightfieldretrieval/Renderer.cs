@@ -103,6 +103,7 @@ namespace Lightfieldretrieval
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferHeight = 256;
             graphics.PreferredBackBufferWidth = 256;
+
             Content.RootDirectory = "Content";
         }
 
@@ -113,7 +114,8 @@ namespace Lightfieldretrieval
         /// and initialize them as well.
         /// </summary>
         protected override void Initialize()
-        {
+        {			
+
             ///////////////////////////////////////////////////////////////////////////
             // Read mesh from a file
             ///////////////////////////////////////////////////////////////////////////
@@ -271,6 +273,9 @@ namespace Lightfieldretrieval
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
+			GraphicsDevice.PresentationParameters.MultiSampleType = MultiSampleType.SixteenSamples;
+			GraphicsDevice.RenderState.MultiSampleAntiAlias = true;
+
             povindex++;
             viewMatrix = Matrix.CreateLookAt(povs[povindex] + center, center, Vector3.Up);
 
