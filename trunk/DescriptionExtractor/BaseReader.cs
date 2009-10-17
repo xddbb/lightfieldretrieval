@@ -7,7 +7,7 @@ using System.Collections;
 
 namespace DescriptionExtractor
 {
-    class BaseReader
+    public class BaseReader
     {
         public Hashtable dirs;
 
