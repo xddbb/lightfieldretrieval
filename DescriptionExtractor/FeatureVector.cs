@@ -35,11 +35,4 @@ namespace DescriptionExtractor
 			return imageFeatures[idx];
 		}
 	}
-
-	/*
-    public struct FeatureCollection
-    {
-        public FeatureVector[] featureVectors;
-    }
-	*/
 }
