@@ -54,6 +54,8 @@ namespace DescriptionExtractor
             ComputeCentroidDistance();
             ComputeFourier();
 
+            //toBitmap();
+
             double[] result;
 
             // Check if enough data present
@@ -234,18 +236,37 @@ namespace DescriptionExtractor
 
             Bitmap bitmap = filter.Apply(bitmap_);
 
-            // We can assume that the center pixel is always filled
-            Color shapeColor = bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2);
-
             // Get background color
             Color backgroundColor = bitmap.GetPixel(0, 0);
+            Color shapeColor = bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2);
 
-            // Find starting point from center
-            for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
+            // If the picked shape color is not backgroud)
+            if (shapeColor != backgroundColor)
             {
-                if (bitmap.GetPixel(start_x_, y) == backgroundColor)
+                // Find starting point from center
+                for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
                 {
-                    start_y_ = y + 1;
+                    if (bitmap.GetPixel(start_x_, y) == backgroundColor)
+                    {
+                        start_y_ = y + 1;
+                    }
+                }
+            }
+            else
+            {
+                // The model has a hole, iterate till first discovery of object
+                for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
+                {
+                    Color c = bitmap.GetPixel(start_x_, y);
+
+                    if (c != backgroundColor && shapeColor == backgroundColor) 
+                    {
+                        shapeColor = c;
+                    }
+                    if (c == backgroundColor && shapeColor != backgroundColor)
+                    {
+                        start_y_ = y + 1;
+                    }
                 }
             }
 
