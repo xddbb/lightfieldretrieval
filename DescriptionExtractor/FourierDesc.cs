@@ -14,9 +14,6 @@ namespace DescriptionExtractor
     {
         private Bitmap bitmap_;
         private int[,] bits_;
-        private Color shapeColor;
-        private Color boundaryColor;
-        private Color backgroundColor;
         private int maxcount_;
         private int start_x_;
         private int start_y_;
@@ -35,8 +32,6 @@ namespace DescriptionExtractor
 
         public FourierDesc(Bitmap bitmap)
         {
-            shapeColor = Color.Black;
-            boundaryColor = Color.White;
             bitmap_ = bitmap;
             bits_ = new int[bitmap.Width, bitmap.Height];
             maxcount_ = 5000;
@@ -229,6 +224,7 @@ namespace DescriptionExtractor
 
         private void FindBoundary()
         {
+            // Apply aforge filters
             FiltersSequence filter = new FiltersSequence();
             filter.Add(new Grayscale( 0.2125, 0.7154, 0.0721 ));
             filter.Add(new Threshold(125));
@@ -238,10 +234,20 @@ namespace DescriptionExtractor
 
             Bitmap bitmap = filter.Apply(bitmap_);
 
-            //bitmap.Save("C:/result1.bmp");
-
             // We can assume that the center pixel is always filled
-            shapeColor = bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2);
+            Color shapeColor = bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2);
+
+            // Get background color
+            Color backgroundColor = bitmap.GetPixel(0, 0);
+
+            // Find starting point from center
+            for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
+            {
+                if (bitmap.GetPixel(start_x_, y) == backgroundColor)
+                {
+                    start_y_ = y + 1;
+                }
+            }
 
             // Put in local memory
             for (int y = 0; y < bitmap.Height - 1; y++)
@@ -256,15 +262,6 @@ namespace DescriptionExtractor
                     {
                         bits_[x, y] = 0;
                     }
-                }
-            }
-
-            // Find starting point from center
-            for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
-            {
-                if (bits_[start_x_, y] == 0)
-                {
-                    start_y_ = y + 1;
                 }
             }
 
@@ -320,13 +317,6 @@ namespace DescriptionExtractor
         private bool ValidBit(int x, int y)
         {
             return (x >= 0 && y >= 0 && x < bitmap_.Width && y < bitmap_.Height);
-        }
-
-        // Helper function compares colors
-
-        private bool IsColor(Color c, Color d)
-        {
-            return (c.R == d.R && c.G == d.G && c.B == d.B);
         }
 
         // Helper function to visualize bitmap
