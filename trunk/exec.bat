@@ -1,4 +1,5 @@
-D:\Development\Uni\Lightfieldretrieval\Lightfieldretrieval\bin\x86\Debug\Lightfieldretrieval.exe C:\Users\Bojan\Documents\Uni\Multimedia\SOF\AIRCRAFT/AIRBUS/AIRBUS_L
+path=%PATH%;D:\Development\Uni\Lightfieldretrieval\Lightfieldretrieval\bin\x86\Debug\
+Lightfieldretrieval.exe C:\Users\Bojan\Documents\Uni\Multimedia\SOF\AIRCRAFT/AIRBUS/AIRBUS_L
 D:\Development\Uni\Lightfieldretrieval\Lightfieldretrieval\bin\x86\Debug\Lightfieldretrieval.exe C:\Users\Bojan\Documents\Uni\Multimedia\SOF\AIRCRAFT/B29/B29_L
 D:\Development\Uni\Lightfieldretrieval\Lightfieldretrieval\bin\x86\Debug\Lightfieldretrieval.exe C:\Users\Bojan\Documents\Uni\Multimedia\SOF\AIRCRAFT/B52/B52_L
 D:\Development\Uni\Lightfieldretrieval\Lightfieldretrieval\bin\x86\Debug\Lightfieldretrieval.exe C:\Users\Bojan\Documents\Uni\Multimedia\SOF\AIRCRAFT/B747/B747_L

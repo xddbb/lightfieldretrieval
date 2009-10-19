@@ -50,7 +50,7 @@ namespace FeatureComparator
 			for (int i = 0; i < 20; i++)
 			{
 				FeatureVector fvA = lfdscA.GetImageFeatures(aligmentA[i]);
-				FeatureVector fvB = lfdscA.GetImageFeatures(aligmentB[i]);
+				FeatureVector fvB = lfdscB.GetImageFeatures(aligmentB[i]);
 				//
 				double z = alpha * EuclideanDistance(fvA.zernike, fvB.zernike);
 				double f = beta * EuclideanDistance(fvA.zernike, fvB.zernike);

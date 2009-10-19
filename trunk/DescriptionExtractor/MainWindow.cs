@@ -94,7 +94,6 @@ namespace DescriptionExtractor
                     /////////////////////////////////////////////////////////////////////////////////
                     // Process directory
                     /////////////////////////////////////////////////////////////////////////////////
-
                     directory = new DirectoryInfo(dirname);
                     FileInfo[] files = directory.GetFiles("*.bmp");
 
@@ -114,16 +113,16 @@ namespace DescriptionExtractor
                             {
                                 MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 Application.Exit();
-                            }
+                            }							
                             imageProcessWorker.ReportProgress((i * 100) / files.Length, new Bitmap(image));
 
                             /////////////////////////////////////////////////////////////////////////////////
                             // Extract features
                             /////////////////////////////////////////////////////////////////////////////////
-
                             zernike = new ZernikeDesc(image);
                             fourier = new FourierDesc(image);
 							#if DEBUG
+								Console.WriteLine("Processing image " + file);
 								Stopwatch stopWatch = new Stopwatch();
 								stopWatch.Start();
 							#endif
