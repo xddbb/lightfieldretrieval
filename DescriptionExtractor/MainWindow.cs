@@ -127,7 +127,7 @@ namespace DescriptionExtractor
 								stopWatch.Start();
 							#endif
 
-							//lfdcs.imageFeatures[i].zernike = zernike.Process();
+							lfdcs.imageFeatures[i].zernike = zernike.Process();
 							lfdcs.imageFeatures[i].fourier = fourier.Process();
 							i++;
 
