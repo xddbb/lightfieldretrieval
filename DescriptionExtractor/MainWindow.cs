@@ -128,7 +128,7 @@ namespace DescriptionExtractor
 								stopWatch.Start();
 							#endif
 
-							lfdcs.imageFeatures[i].zernike = zernike.Process();
+							//lfdcs.imageFeatures[i].zernike = zernike.Process();
 							lfdcs.imageFeatures[i].fourier = fourier.Process();
 							i++;
 
@@ -150,10 +150,14 @@ namespace DescriptionExtractor
                         /////////////////////////////////////////////////////////////////////////////////
 
                         // Serialization
-                        XmlSerializer s = new XmlSerializer(typeof(LightFieldDescriptor));
-                        TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
-                        s.Serialize(w, lfdcs);
-                        w.Close();
+                        try
+                        {
+                            XmlSerializer s = new XmlSerializer(typeof(LightFieldDescriptor));
+                            TextWriter w = new StreamWriter(directory.FullName + @"\features.xml");
+                            s.Serialize(w, lfdcs);
+                            w.Close();
+                        }
+                        catch (Exception) { }
                     }
                 }
             }

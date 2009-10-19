@@ -4,14 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Collections;
+using AForge.Imaging;
 using AForge.Imaging.Filters;
+using System.Drawing.Imaging;
 
 namespace DescriptionExtractor
 {
     public class FourierDesc
     {
         private Bitmap bitmap_;
+        private Bitmap newbitmap_;
         private Color shapeColor;
+        private Color boundaryColor;
+        private Color backgroundColor;
         private int maxcount_;
         private int start_x_;
         private int start_y_;
@@ -31,11 +36,14 @@ namespace DescriptionExtractor
         public FourierDesc(Bitmap bitmap)
         {
             shapeColor = Color.Black;
+            boundaryColor = Color.White;
             bitmap_ = bitmap;
+            newbitmap_ = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
             maxcount_ = 5000;
-            coefficients_ = 60;
+            coefficients_ = 15;
             boundary_sum_x_ = 0D;
             boundary_sum_y_ = 0D;
+            start_x_ = bitmap.Width / 2;
             boundary_x_ = new int[maxcount_];
             boundary_y_ = new int[maxcount_];
             cors_x_ = new int[8] { 1, 1, 1, 0, -1, -1, -1, 0 };
@@ -51,13 +59,23 @@ namespace DescriptionExtractor
             ComputeCentroidDistance();
             ComputeFourier();
 
-            //bitmap_.Save("C:/result1.bmp");
+            //newbitmap_.Save("C:/result3.bmp");
 
-            double[] result = new double[coefficients_];
+            double[] result;
 
-            for (int i = 0; i < coefficients_; i++)
+            // Check if enough data present
+            if (fourier_.Length > coefficients_)
             {
-                result[i] = Math.Abs(fourier_[i + 1]) / Math.Abs(fourier_[0]);
+                result = new double[coefficients_];
+
+                for (int i = 0; i < coefficients_; i++)
+                {
+                    result[i] = Math.Abs(fourier_[i + 1]) / Math.Abs(fourier_[0]);
+                }
+            }
+            else
+            {
+                result = new double[0];
             }
 
             return result;
@@ -126,9 +144,9 @@ namespace DescriptionExtractor
                 {
                     finished = true;
                 }
-                if (current_x != 0 && current_y != 0)
+                if (current_x != 0 || current_y != 0)
                 {
-                    bitmap_.SetPixel(prev_x, prev_y, Color.Red);
+                    newbitmap_.SetPixel(prev_x, prev_y, Color.Red);
                 }
             }
         }
@@ -185,20 +203,25 @@ namespace DescriptionExtractor
             for (int z = dir; z < dir + 8; z++)
             {
                 lookup = z % 8;
+                int lookup_x = x + cors_x_[lookup];
+                int lookup_y = y + cors_y_[lookup];
 
-                Color c = bitmap_.GetPixel(x + cors_x_[lookup], y + cors_y_[lookup]);
+                if ( isValidPixel(lookup_x, lookup_y) )
+                {
+                    Color c = newbitmap_.GetPixel(lookup_x, lookup_y);
 
-                if (IsColor(c, shapeColor))
-                {
-                    next[0] = x + cors_x_[lookup];
-                    next[1] = y + cors_y_[lookup];
-                    return;
-                }
-                else if (IsColor(c, Color.Red) &&
-                         result[0] == 0 && result[1] == 0)
-                {
-                    result[0] = x + cors_x_[lookup];
-                    result[1] = y + cors_y_[lookup];
+                    if (IsColor(c, boundaryColor))
+                    {
+                        next[0] = lookup_x;
+                        next[1] = lookup_y;
+                        return;
+                    }
+                    else if (IsColor(c, Color.Red) &&
+                             result[0] == 0 && result[1] == 0)
+                    {
+                        result[0] = lookup_x;
+                        result[1] = lookup_y;
+                    }
                 }
             }
 
@@ -210,46 +233,83 @@ namespace DescriptionExtractor
         private void FindBoundary()
         {
             FiltersSequence filter = new FiltersSequence();
-            filter.Add(new Grayscale(0.2125, 0.7154, 0.0721));
+            filter.Add(new Grayscale( 0.2125, 0.7154, 0.0721 ));
+            filter.Add(new Threshold(125));
+            filter.Add(new Closing());
             filter.Add(new Opening());
-            filter.Add(new Edges());
-            filter.Add(new Invert());
+            filter.Add(new ConnectedComponentsLabeling());
 
             Bitmap bitmap = filter.Apply(bitmap_);
 
-            // Horizontal processing
-            for (int y = 0; y < bitmap_.Height; y++)
-            {
-                for (int x = 0; x < bitmap_.Width; x++)
-                {
-                    // Dont store edges
-                    if (x > 0 && y > 0 && x < bitmap_.Width - 1 && y < bitmap_.Height - 1)
-                    {
-                        if (IsColor(Color.White, bitmap.GetPixel(x, y)))
-                        {
-                            bitmap_.SetPixel(x, y, Color.White);
-                        }
-                        else
-                        {
-                            bitmap_.SetPixel(x, y, Color.Black);
-                        }
-                    }
-                    else
-                    {
-                        bitmap_.SetPixel(x, y, Color.White);
-                    }
+            //bitmap.Save("C:/result1.bmp");
 
-                    // Find start
-                    if (start_x_ == 0 && start_y_ == 0)
-                    {
-                        if (IsColor(bitmap_.GetPixel(x, y), shapeColor))
-                        {
-                            start_x_ = x;
-                            start_y_ = y;
-                        }
-                    }
+            // We can assume that the center pixel is always filled
+            shapeColor = bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2);
+
+            // The background color
+            backgroundColor = bitmap.GetPixel(0,0);
+
+            // Find starting point from center
+            for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
+            {
+                if (IsColor(bitmap.GetPixel( start_x_, y), backgroundColor))
+                {
+                    start_y_ = y + 1;
                 }
             }
+
+            // Horizontal processing
+            for (int y = -1; y < bitmap.Height; y++)
+            {
+                for (int x = -1; x < bitmap.Width; x++)
+                {
+                    ProcessPixel(ref bitmap, x, y, x + 1, y);
+                }
+            }
+
+            // Vertical processings
+            for (int x = -1; x < bitmap.Width; x++)
+            {
+                for (int y = -1; y < bitmap.Height; y++)
+                {
+                    ProcessPixel(ref bitmap, x, y, x, y + 1);
+                }
+            }
+
+            //newbitmap_.Save("C:/result2.bmp");
+        }
+
+
+        // Process pixel
+
+        private void ProcessPixel(ref Bitmap bitmap, int x1, int y1, int x2, int y2)
+        {
+            Color c1 = backgroundColor;
+            Color c2 = backgroundColor;
+
+            if( isValidPixel( x1, y1) ) 
+            {
+                c1 = bitmap.GetPixel(x1, y1);
+            } 
+            if( isValidPixel( x2, y2) ) 
+            {
+                c2 = bitmap.GetPixel(x2, y2);
+            }
+
+            // Draw borders
+            if ((!IsColor(c1, shapeColor)) && (IsColor(c2, shapeColor)))
+            {
+                newbitmap_.SetPixel(x2, y2, boundaryColor);
+            }
+            else if (IsColor(c1, shapeColor) && (!IsColor(c2, shapeColor)))
+            {
+                newbitmap_.SetPixel(x1, y1, boundaryColor);
+            }
+        }
+
+        private bool isValidPixel(int x, int y)
+        {
+            return (x >= 0 && y >= 0 && x < bitmap_.Width && y < bitmap_.Height);
         }
 
         // Helper functioin compares colors
