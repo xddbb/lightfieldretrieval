@@ -13,7 +13,7 @@ namespace DescriptionExtractor
     public class FourierDesc
     {
         private Bitmap bitmap_;
-        private Bitmap newbitmap_;
+        private int[,] bits_;
         private Color shapeColor;
         private Color boundaryColor;
         private Color backgroundColor;
@@ -38,9 +38,9 @@ namespace DescriptionExtractor
             shapeColor = Color.Black;
             boundaryColor = Color.White;
             bitmap_ = bitmap;
-            newbitmap_ = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
+            bits_ = new int[bitmap.Width, bitmap.Height];
             maxcount_ = 5000;
-            coefficients_ = 15;
+            coefficients_ = 10;
             boundary_sum_x_ = 0D;
             boundary_sum_y_ = 0D;
             start_x_ = bitmap.Width / 2;
@@ -58,8 +58,6 @@ namespace DescriptionExtractor
             TraceBoundary();
             ComputeCentroidDistance();
             ComputeFourier();
-
-            //newbitmap_.Save("C:/result3.bmp");
 
             double[] result;
 
@@ -82,7 +80,7 @@ namespace DescriptionExtractor
         }
 
         // Computes fourier descriptor
-
+        
         private void ComputeFourier()
         {
             Fourier.FourierTransform.DFT(complex_, Fourier.FourierDirection.Forward);
@@ -110,7 +108,7 @@ namespace DescriptionExtractor
             {
                 complex_[i] = new Complex((double)(Math.Sqrt(Math.Pow(center_x - boundary_x_[i], 2) + Math.Pow(center_y - boundary_y_[i], 2))),0);
             }
-        }
+        }        
 
         // Traces boundary of bitmap
 
@@ -146,7 +144,7 @@ namespace DescriptionExtractor
                 }
                 if (current_x != 0 || current_y != 0)
                 {
-                    newbitmap_.SetPixel(prev_x, prev_y, Color.Red);
+                    bits_[prev_x, prev_y] = 3;
                 }
             }
         }
@@ -206,18 +204,17 @@ namespace DescriptionExtractor
                 int lookup_x = x + cors_x_[lookup];
                 int lookup_y = y + cors_y_[lookup];
 
-                if ( isValidPixel(lookup_x, lookup_y) )
+                if ( ValidBit(lookup_x, lookup_y) )
                 {
-                    Color c = newbitmap_.GetPixel(lookup_x, lookup_y);
+                    int bit = bits_[lookup_x, lookup_y];
 
-                    if (IsColor(c, boundaryColor))
+                    if (bits_[lookup_x, lookup_y] == 2)
                     {
                         next[0] = lookup_x;
                         next[1] = lookup_y;
                         return;
                     }
-                    else if (IsColor(c, Color.Red) &&
-                             result[0] == 0 && result[1] == 0)
+                    else if (bits_[lookup_x, lookup_y] == 3 && result[0] == 0 && result[1] == 0)
                     {
                         result[0] = lookup_x;
                         result[1] = lookup_y;
@@ -246,13 +243,26 @@ namespace DescriptionExtractor
             // We can assume that the center pixel is always filled
             shapeColor = bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2);
 
-            // The background color
-            backgroundColor = bitmap.GetPixel(0,0);
+            // Put in local memory
+            for (int y = 0; y < bitmap.Height - 1; y++)
+            {
+                for (int x = 0; x < bitmap.Width - 1; x++)
+                {
+                    if (bitmap.GetPixel(x, y) == shapeColor)
+                    {
+                        bits_[x, y] = 1;
+                    }
+                    else
+                    {
+                        bits_[x, y] = 0;
+                    }
+                }
+            }
 
             // Find starting point from center
             for (int y = bitmap.Height / 2; y > 0 && start_y_ == 0; y--)
             {
-                if (IsColor(bitmap.GetPixel( start_x_, y), backgroundColor))
+                if (bits_[start_x_, y] == 0)
                 {
                     start_y_ = y + 1;
                 }
@@ -263,7 +273,7 @@ namespace DescriptionExtractor
             {
                 for (int x = -1; x < bitmap.Width; x++)
                 {
-                    ProcessPixel(ref bitmap, x, y, x + 1, y);
+                    ProcessPixel(x, y, x + 1, y);
                 }
             }
 
@@ -272,51 +282,83 @@ namespace DescriptionExtractor
             {
                 for (int y = -1; y < bitmap.Height; y++)
                 {
-                    ProcessPixel(ref bitmap, x, y, x, y + 1);
+                    ProcessPixel(x, y, x, y + 1);
                 }
             }
-
-            //newbitmap_.Save("C:/result2.bmp");
         }
 
+        // Tries to find boundary pixels
 
-        // Process pixel
-
-        private void ProcessPixel(ref Bitmap bitmap, int x1, int y1, int x2, int y2)
+        private void ProcessPixel(int x1, int y1, int x2, int y2)
         {
-            Color c1 = backgroundColor;
-            Color c2 = backgroundColor;
+            int c1 = 0;
+            int c2 = 0;
 
-            if( isValidPixel( x1, y1) ) 
+            // Checks if bits are valid
+            if (ValidBit(x1, y1))
             {
-                c1 = bitmap.GetPixel(x1, y1);
-            } 
-            if( isValidPixel( x2, y2) ) 
+                c1 = bits_[x1, y1];
+            }
+            if (ValidBit(x2, y2))
             {
-                c2 = bitmap.GetPixel(x2, y2);
+                c2 = bits_[x2, y2];
             }
 
             // Draw borders
-            if ((!IsColor(c1, shapeColor)) && (IsColor(c2, shapeColor)))
+            if (c1 == 0 && (c2 == 1 || c2 == 2))
             {
-                newbitmap_.SetPixel(x2, y2, boundaryColor);
+                bits_[x2, y2] = 2;
             }
-            else if (IsColor(c1, shapeColor) && (!IsColor(c2, shapeColor)))
+            else if ((c1 == 1 || c1 == 2) && c2 == 0)
             {
-                newbitmap_.SetPixel(x1, y1, boundaryColor);
+                bits_[x1, y1] = 2;
             }
         }
 
-        private bool isValidPixel(int x, int y)
+        // Helper function to check bitmap
+
+        private bool ValidBit(int x, int y)
         {
             return (x >= 0 && y >= 0 && x < bitmap_.Width && y < bitmap_.Height);
         }
 
-        // Helper functioin compares colors
+        // Helper function compares colors
 
         private bool IsColor(Color c, Color d)
         {
             return (c.R == d.R && c.G == d.G && c.B == d.B);
-        }  
+        }
+
+        // Helper function to visualize bitmap
+
+        private void toBitmap()
+        {
+            Bitmap asdf = new Bitmap(bitmap_.Width, bitmap_.Height);
+
+            for (int x = 0; x < bitmap_.Width; x++)
+            {
+                for (int y = 0; y < bitmap_.Height; y++)
+                {
+                    if(bits_[x, y] == 0) {
+                        asdf.SetPixel(x , y, Color.White);
+                    }
+                    else if (bits_[x, y] == 1)
+                    {
+                        asdf.SetPixel(x , y, Color.Black);
+                    }
+                    else if (bits_[x, y] == 2)
+                    {
+                        asdf.SetPixel(x, y, Color.Red);
+                    }
+                    else
+                    {
+                        asdf.SetPixel(x, y, Color.Green);
+                    }
+                    
+                }
+            }
+
+            asdf.Save("C:/result1.bmp");
+        }
     }
 }
