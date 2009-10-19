@@ -158,9 +158,9 @@ namespace Lightfieldretrieval
                 {
                     s = sr.ReadLine();
                     String[] subs = s.Split(new char[] { ' ' });
-                    float x = Single.Parse(subs[0]);
-                    float y = Single.Parse(subs[1]);
-                    float z = Single.Parse(subs[2]);
+                    float x = Single.Parse(subs[0].Replace('.',','));
+                    float y = Single.Parse(subs[1].Replace('.',','));
+                    float z = Single.Parse(subs[2].Replace('.',','));
                     //
                     Vector3 v = new Vector3(x, y, z);
                     vectors[i] = v;
