@@ -180,7 +180,7 @@ namespace DescriptionExtractor
 		/// </summary>
 		private Complex ZernikeMoment(int n, int m)
         {
-            double cnt = 0;                 // TODO: The normalization value is subject to change
+            double weight = 0;                 // TODO: The normalization value is subject to change
             //
 			Complex sum = new Complex(0.0, 0.0);
             for (int y = 0; y < N; y++)
@@ -196,11 +196,11 @@ namespace DescriptionExtractor
 						double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
 						Complex Vc = V(n, m, rho, theta).Conjugate;
 						sum += I(x, y) * Vc;
-                        cnt++;
+						weight += I(x, y);									// Accum weight
                     }                    
                 }
             }
-			sum *= (n + 1) / Math.PI;
+			sum *= (n + 1) / weight;
 			return sum;
         }
 

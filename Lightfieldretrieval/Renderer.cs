@@ -69,7 +69,21 @@ namespace Lightfieldretrieval
 			new Vector3(0.425325f, 1.30902f, -0.262866f)
         };
 		*/
+ 
+        Vector3[] povs = new Vector3[] {
+            new Vector3(1.0f, 1.0f, 1.0f),
+            new Vector3(-1.0f, 1.0f, 1.0f),
+            new Vector3(-1.0f, 1.0f, -1.0f),
+            new Vector3(1.0f, 1.0f, -1.0f),
+            new Vector3(0.0f, 0.618034f, 1.61803f),
+            new Vector3(0.0f, 0.618034f, -1.61803f),
+            new Vector3(1.0f, 1.61803f, 0.0f),
+            new Vector3(-1.0f, 1.61803f, 0.0f),
+            new Vector3(1.61803f, 0.0f, 0.618034f),
+            new Vector3(-1.61803f, 0.0f, 0.618034f)
+        };
 
+		/*
 		Vector3[] povs = new Vector3[] {
 			new Vector3(-1.37638f, 0.0f, 0.262866f),
 			new Vector3(-0.425325f, -1.30902f, 0.262866f),
@@ -82,6 +96,7 @@ namespace Lightfieldretrieval
 			new Vector3(0.688191f, -0.5f, 1.11352f),
 			new Vector3(-0.850651f, 0.0f, 1.11352f),
 		};
+		*/
 
         int povindex;
 
@@ -194,7 +209,6 @@ namespace Lightfieldretrieval
             ///////////////////////////////////////////////////////////////////////////
             worldMatrix = Matrix.Identity;
             povindex = -1;
-            //viewMatrix = Matrix.CreateLookAt(povs[povindex], center, Vector3.Up);
             projectionMatrix = Matrix.CreateOrthographic(2 * distance, 2 * distance, -distance, distance );
             //
             basicEffect = new BasicEffect(graphics.GraphicsDevice, null);
@@ -273,17 +287,13 @@ namespace Lightfieldretrieval
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-			GraphicsDevice.PresentationParameters.MultiSampleType = MultiSampleType.SixteenSamples;
-			GraphicsDevice.RenderState.MultiSampleAntiAlias = true;
-
             povindex++;
             viewMatrix = Matrix.CreateLookAt(povs[povindex] + center, center, Vector3.Up);
 
             GraphicsDevice.Clear(Color.White);
             graphics.GraphicsDevice.VertexDeclaration = basicEffectVertexDeclaration;
             graphics.GraphicsDevice.Vertices[0].SetSource(vertexBuffer, 0, VertexPositionColor.SizeInBytes);
-            graphics.GraphicsDevice.Indices = indexBuffer;
-            graphics.GraphicsDevice.RenderState.PointSize = 3.0f;
+            graphics.GraphicsDevice.Indices = indexBuffer;           
             graphics.GraphicsDevice.RenderState.CullMode = CullMode.None;
             //graphics.GraphicsDevice.RenderState.FillMode = FillMode.WireFrame;
 
@@ -291,6 +301,11 @@ namespace Lightfieldretrieval
             basicEffect.World = worldMatrix;
             basicEffect.View = viewMatrix;
             basicEffect.Projection = projectionMatrix;
+			//
+			// Should resolve rendering bug
+			basicEffect.TextureEnabled = false;
+			basicEffect.LightingEnabled = false;
+			basicEffect.VertexColorEnabled = true;
             //
             basicEffect.Begin();
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
@@ -315,7 +330,7 @@ namespace Lightfieldretrieval
             renderTargetTexture.Save(fileinfo.FullName + povindex + ".bmp", ImageFileFormat.Bmp);
             
             if (povindex >= povs.Length - 1)
-                this.Exit();                
+                this.Exit();
         }
     }
 }

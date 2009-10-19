@@ -14,16 +14,23 @@ namespace FeatureComparator
 		{
 			if (args.Length < 2)
 			{
+				Console.WriteLine("No inupt files provided!");
 				return;
 			}
 
 			String file0 = args[0];
 			if (!File.Exists(file0))
+			{
+				Console.Write("File " + file0 + " not found!");
 				return;
+			}
 
 			String file1 = args[1];
 			if (!File.Exists(file1))
+			{
+				Console.Write("File " + file1 + " not found!");
 				return;
+			}
 
 			//////////////////////////////////////////////////////////////////////
 			// Deserialization
@@ -32,15 +39,16 @@ namespace FeatureComparator
 			LightFieldDescriptor lfd0 = (LightFieldDescriptor)s.Deserialize(r);		
 			r.Close();
 			//
-			r = new StreamReader(file0);
+			r = new StreamReader(file1);
 			LightFieldDescriptor lfd1 = (LightFieldDescriptor)s.Deserialize(r);
 			r.Close();
 
 			Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 1.0f);
-			cmp.Compare();
+			double dist = cmp.Compare();
 
+			Console.Write(dist);
 
-			Console.ReadKey();
+			//Console.ReadKey();
 		}
 	}
 }
