@@ -30,7 +30,6 @@ namespace DescriptionExtractor
             for (int i = 0; i < n; i++)
             {
                 coefficients[i] = coeff[i];
-                //coefficients[i] = coeff[n-i-1];
             }
         }
 

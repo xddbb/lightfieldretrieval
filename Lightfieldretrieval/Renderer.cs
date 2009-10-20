@@ -67,21 +67,6 @@ namespace Lightfieldretrieval
 			new Vector3(0.425325f, 1.30902f, -0.262866f)
         };
 		*/
- 
-		/*
-        Vector3[] povs = new Vector3[] {
-            new Vector3(1.0f, 1.0f, 1.0f),
-            new Vector3(-1.0f, 1.0f, 1.0f),
-            new Vector3(-1.0f, 1.0f, -1.0f),
-            new Vector3(1.0f, 1.0f, -1.0f),
-            new Vector3(0.0f, 0.618034f, 1.61803f),
-            new Vector3(0.0f, 0.618034f, -1.61803f),
-            new Vector3(1.0f, 1.61803f, 0.0f),
-            new Vector3(-1.0f, 1.61803f, 0.0f),
-            new Vector3(1.61803f, 0.0f, 0.618034f),
-            new Vector3(-1.61803f, 0.0f, 0.618034f)
-        };
-		*/
 	
 		Vector3[] povs = new Vector3[] {
 			new Vector3(-1.37638f, 0.0f, 0.262866f),
@@ -100,6 +85,7 @@ namespace Lightfieldretrieval
 		Matrix[] rotations;
 
         int povindex;
+		int rotindex;
 
         Matrix worldMatrix;
         Matrix viewMatrix;
@@ -110,10 +96,6 @@ namespace Lightfieldretrieval
         IndexBuffer indexBuffer;
         BasicEffect basicEffect;
 
-        float x;
-        float y;
-        int s;
-
         public Renderer()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -123,12 +105,40 @@ namespace Lightfieldretrieval
             Content.RootDirectory = "Content";
         }
 
-		/*
-		public Matrix RandomOrientation()
+		
+		/// <summary>
+		/// Pseudo random orinentation
+		/// </summary>
+		public Matrix GetRandomOrientation()
 		{
+			//////////////////////////////////////////////////////////////////////
+			// Get a vector, uniformly distributed on a unit sphere by cutting
+			// off the corners of the cube. Then create a orthonormal basis.
+			// Using the random local field ensures pseudo randomnes
+			//////////////////////////////////////////////////////////////////////
+			Vector3 v;
+			do
+			{
+				v = new Vector3(
+						2.0f * (float)random.NextDouble() - 1.0f,
+						2.0f * (float)random.NextDouble() - 1.0f,
+						2.0f * (float)random.NextDouble() - 1.0f);
+			} while (v.Length() > 1.0f);
+			//
+			v.Normalize();
+			Vector3 t = Vector3.Up;
+			Vector3 u = Vector3.Cross(v, t);
+			u.Normalize();
+			Vector3 w = Vector3.Cross(u, v);
+			w.Normalize();
 
+			Matrix rot = Matrix.Identity;			
+			rot.Forward = v;
+			rot.Left = u;
+			rot.Up = w;
+			return rot;
 		}
-		*/
+		
 
         /// <summary>
         /// Allows the game to perform any initialization it needs to before starting to run.
@@ -140,7 +150,7 @@ namespace Lightfieldretrieval
         {			
 
             ///////////////////////////////////////////////////////////////////////////
-            // Read mesh from a file
+            // Read mesh from a file and generate veretex and index buffers on the GPU
             ///////////////////////////////////////////////////////////////////////////
             if (filename == null || filename == "")
             {
@@ -232,7 +242,16 @@ namespace Lightfieldretrieval
 			//////////////////////////////////////////////////////////////////////
 			// Pseudo random rotations
 			//////////////////////////////////////////////////////////////////////
-			random = new Random(42);
+			random = new Random(42);		// Seed
+			rotations = new Matrix[10];
+			// A lot of models of the same class are roatated the same,
+			// so we keep one initial roatation well
+			rotations[0] = Matrix.Identity;
+			for (int i = 1; i < rotations.Length; i++)
+			{
+				rotations[i] = GetRandomOrientation();
+			}
+			rotindex = 0;
 
             base.Initialize();
         }
@@ -246,10 +265,6 @@ namespace Lightfieldretrieval
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            x = Mouse.GetState().X;
-            y = Mouse.GetState().Y;
-            s = Mouse.GetState().ScrollWheelValue + 1;
         }
 
         /// <summary>
@@ -268,36 +283,7 @@ namespace Lightfieldretrieval
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            /*
-            // Allows the game to exit
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-                this.Exit();
-
-            //float ds = s - Mouse.GetState().ScrollWheelValue;
-            s = Mouse.GetState().ScrollWheelValue + 1;
-            float scale = (s > 1) ? s : 1 / s;
-            //worldMatrix = Matrix.CreateScale((float)Math.Log(scale));
-
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed)
-            {
-                float dx = x - Mouse.GetState().X;
-                float dy = y - Mouse.GetState().X;
-                //
-                x = Mouse.GetState().X;
-                y = Mouse.GetState().Y;
-                //
-                const float factor = 0.01f;
-                //
-                worldMatrix = Matrix.CreateScale((float)Math.Pow(scale, 0.5)) * Matrix.CreateFromYawPitchRoll(x * factor, y * factor, 0.0f);
-            }
-            else
-            {
-                //worldMatrix = Matrix.CreateScale((float)Math.Pow(scale, 0.5));
-            }
-
-            // TODO: Add your update logic here
-            */
-
+            // No update logic
             base.Update(gameTime);
         }
 
@@ -308,7 +294,7 @@ namespace Lightfieldretrieval
         protected override void Draw(GameTime gameTime)
         {
             povindex++;
-            viewMatrix = Matrix.CreateLookAt(povs[povindex] + center, center, Vector3.Up);
+            viewMatrix = Matrix.CreateLookAt(povs[povindex], Vector3.Zero, Vector3.Up);
 
             GraphicsDevice.Clear(Color.White);
             graphics.GraphicsDevice.VertexDeclaration = basicEffectVertexDeclaration;
@@ -317,9 +303,9 @@ namespace Lightfieldretrieval
             graphics.GraphicsDevice.RenderState.CullMode = CullMode.None;		
             //graphics.GraphicsDevice.RenderState.FillMode = FillMode.WireFrame;
 
-            // This code would go between a device 
-            basicEffect.World = worldMatrix;
-            basicEffect.View = viewMatrix;
+            // Send matrices to the shader program
+			basicEffect.World = Matrix.CreateTranslation(-center) * rotations[rotindex];		//Bring to origin and rotate
+            basicEffect.View = viewMatrix;							
             basicEffect.Projection = projectionMatrix;
 			//
 			// Should resolve rendering bug
@@ -347,10 +333,15 @@ namespace Lightfieldretrieval
                 graphics.GraphicsDevice.PresentationParameters.BackBufferFormat);
 
             graphics.GraphicsDevice.ResolveBackBuffer(renderTargetTexture);
-            renderTargetTexture.Save(fileinfo.FullName + povindex + ".bmp", ImageFileFormat.Bmp);
-            
-            if (povindex >= povs.Length - 1)
-                this.Exit();
+            renderTargetTexture.Save(fileinfo.FullName + "_LF" + rotindex + "_IMG" + povindex + ".bmp", ImageFileFormat.Bmp);
+
+			if (povindex >= povs.Length - 1)
+			{
+				rotindex++;
+				povindex = -1;				
+			}
+			if(rotindex >= rotations.Length)
+				this.Exit();
         }
     }
 }

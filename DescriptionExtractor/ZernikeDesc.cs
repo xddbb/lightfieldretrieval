@@ -80,7 +80,7 @@ namespace DescriptionExtractor
 		/// <param name="y">y coord</param>
 		/// <returns>The image color of the [x, y] pixel</returns>
 		private int I(int x, int y)
-		{
+		{		
 			return bmap[x, y];
 		}
 
@@ -192,7 +192,6 @@ namespace DescriptionExtractor
                     double rho = Math.Sqrt( xn * xn + yn * yn ) / N;        // Go polar, Rho
                     if (rho <= 1.0)
                     {
-						//double theta = Math.Atan(yn / xn);                  // Go polar, Theta
 						double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
 						Complex Vc = V(n, m, rho, theta).Conjugate;
 						sum += I(x, y) * Vc;
@@ -219,7 +218,6 @@ namespace DescriptionExtractor
                     double xn = 2 * x - N + 1;                          // Normalized x
                     double yn = N - 1 - 2 * y;                          // Normalized y
                     double rho = Math.Sqrt(xn * xn + yn * yn) / N;      // Go polar, Rho
-                    //double theta = Math.Atan(yn / xn);                  // Go polar, Theta
 					double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
                     if (rho <= 1.0)
                     {
