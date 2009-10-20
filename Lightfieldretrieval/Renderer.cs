@@ -43,9 +43,7 @@ namespace Lightfieldretrieval
         /// Point of views, half the point of the dodecahedron
         /// </summary>
 		///
-
 		/*
-
 		Vector3[] povs = new Vector3[] {
             new Vector3(-1.37638f, 0.0f, 0.262866f),
 			new Vector3(1.37638f, 0.0f, -0.262866f),
@@ -70,6 +68,7 @@ namespace Lightfieldretrieval
         };
 		*/
  
+		/*
         Vector3[] povs = new Vector3[] {
             new Vector3(1.0f, 1.0f, 1.0f),
             new Vector3(-1.0f, 1.0f, 1.0f),
@@ -82,8 +81,8 @@ namespace Lightfieldretrieval
             new Vector3(1.61803f, 0.0f, 0.618034f),
             new Vector3(-1.61803f, 0.0f, 0.618034f)
         };
-
-		/*
+		*/
+	
 		Vector3[] povs = new Vector3[] {
 			new Vector3(-1.37638f, 0.0f, 0.262866f),
 			new Vector3(-0.425325f, -1.30902f, 0.262866f),
@@ -96,7 +95,9 @@ namespace Lightfieldretrieval
 			new Vector3(0.688191f, -0.5f, 1.11352f),
 			new Vector3(-0.850651f, 0.0f, 1.11352f),
 		};
-		*/
+
+		Random random;
+		Matrix[] rotations;
 
         int povindex;
 
@@ -121,6 +122,13 @@ namespace Lightfieldretrieval
 
             Content.RootDirectory = "Content";
         }
+
+		/*
+		public Matrix RandomOrientation()
+		{
+
+		}
+		*/
 
         /// <summary>
         /// Allows the game to perform any initialization it needs to before starting to run.
@@ -158,9 +166,16 @@ namespace Lightfieldretrieval
                 {
                     s = sr.ReadLine();
                     String[] subs = s.Split(new char[] { ' ' });
-                    float x = Single.Parse(subs[0].Replace('.',','));
-                    float y = Single.Parse(subs[1].Replace('.',','));
-                    float z = Single.Parse(subs[2].Replace('.',','));
+										
+					#if !COMMAS
+						float x = Single.Parse(subs[0].Replace('.',','));
+						float y = Single.Parse(subs[1].Replace('.',','));
+						float z = Single.Parse(subs[2].Replace('.',','));
+					#else
+						float x = Single.Parse(subs[0]);
+						float y = Single.Parse(subs[1]);
+						float z = Single.Parse(subs[2]);
+					#endif
                     //
                     Vector3 v = new Vector3(x, y, z);
                     vectors[i] = v;
@@ -168,7 +183,6 @@ namespace Lightfieldretrieval
                     modelVertices[i] = new VertexPositionColor(vectors[i], Color.Black);
                 }
                 center /= vertexCount;
-                //
                 //
                 foreach (Vector3 v in vectors)
                 {
@@ -215,8 +229,14 @@ namespace Lightfieldretrieval
             basicEffect.EnableDefaultLighting();
             basicEffectVertexDeclaration = new VertexDeclaration(graphics.GraphicsDevice, VertexPositionColor.VertexElements);
 
+			//////////////////////////////////////////////////////////////////////
+			// Pseudo random rotations
+			//////////////////////////////////////////////////////////////////////
+			random = new Random(42);
+
             base.Initialize();
         }
+		
 
         /// <summary>
         /// LoadContent will be called once per game and is the place to load
@@ -294,7 +314,7 @@ namespace Lightfieldretrieval
             graphics.GraphicsDevice.VertexDeclaration = basicEffectVertexDeclaration;
             graphics.GraphicsDevice.Vertices[0].SetSource(vertexBuffer, 0, VertexPositionColor.SizeInBytes);
             graphics.GraphicsDevice.Indices = indexBuffer;           
-            graphics.GraphicsDevice.RenderState.CullMode = CullMode.None;
+            graphics.GraphicsDevice.RenderState.CullMode = CullMode.None;		
             //graphics.GraphicsDevice.RenderState.FillMode = FillMode.WireFrame;
 
             // This code would go between a device 
