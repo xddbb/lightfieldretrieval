@@ -34,6 +34,7 @@ namespace FeatureComparator
 
 			//////////////////////////////////////////////////////////////////////
 			// Deserialization
+			//////////////////////////////////////////////////////////////////////
 			XmlSerializer s = new XmlSerializer(typeof(LightFieldDescriptor));
 			TextReader r = new StreamReader(file0);
 			LightFieldDescriptor lfd0 = (LightFieldDescriptor)s.Deserialize(r);		
@@ -43,12 +44,13 @@ namespace FeatureComparator
 			LightFieldDescriptor lfd1 = (LightFieldDescriptor)s.Deserialize(r);
 			r.Close();
 
+			//////////////////////////////////////////////////////////////////////
+			// Actual compare
+			//////////////////////////////////////////////////////////////////////
 			Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 1.0f);
 			double dist = cmp.Compare();
 
-			Console.Write(dist);
-
-			//Console.ReadKey();
+			Console.Write(dist);	// Output to console is enough for PowerShell script
 		}
 	}
 }
