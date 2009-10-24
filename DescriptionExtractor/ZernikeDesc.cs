@@ -12,6 +12,10 @@
 // GNU Lesser General Public License for more details.
 #endregion
 
+// Uncomment the next line if you want to reconstruct the images for debugging
+// reasons. Twice as slooowww though!
+//#define RECONSTRUCT
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -153,7 +157,12 @@ namespace DescriptionExtractor
             else
             {
                 poly = RadialPolynomial(n, m);
-                zernikePolynomials[key] = poly;
+				//
+				// Thread safety
+				lock (zernikePolynomials)
+				{
+					zernikePolynomials[key] = poly;	
+				}                
 				#if DEBUG
 					Console.WriteLine("Polynomial R(" + n + "," + m + "): " + poly + " added to cache.");
 				#endif
@@ -192,10 +201,13 @@ namespace DescriptionExtractor
                     double rho = Math.Sqrt( xn * xn + yn * yn ) / N;        // Go polar, Rho
                     if (rho <= 1.0)
                     {
-						double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
-						Complex Vc = V(n, m, rho, theta).Conjugate;
-						sum += I(x, y) * Vc;
-						weight += I(x, y);									// Accum weight
+						if (I(x, y) == 1)
+						{
+							double theta = Math.Atan2(yn, xn);                  // Go polar, Theta
+							Complex Vc = V(n, m, rho, theta).Conjugate;
+							sum += Vc;
+						}
+						weight += 1;									// Accum weight
                     }                    
                 }
             }
@@ -225,11 +237,16 @@ namespace DescriptionExtractor
                         int i = 0;
                         for (int n = 0; n <= order; n++)
                         {
-                            for (int m = -n; m <= n; m += 2)
+                            for (int m = -n; m <= 0; m += 2)
                             {
 								Complex znm = Z[i++];
 								Complex vnm = V(n, m, rho, theta);
-                                Complex result = znm * vnm;
+								Complex result;
+								if(m != 0)
+									result = znm * vnm + znm.Conjugate * vnm.Conjugate;
+								else
+									result = znm * vnm;
+								//
 								sum += result;								
                             }
                         }
@@ -281,13 +298,13 @@ namespace DescriptionExtractor
                     i++;
                 }
             }
-            			
-			// Debug tool
-			/*
-            Bitmap bmp = Reconstruct(Z);
-            bmp.Save("zernike" + c++ + ".png"); 			
-            */
-         
+            						
+			#if RECONSTRUCT
+				// Debug tool
+				Bitmap bmp = Reconstruct(Z);
+				bmp.Save("zernike" + c++ + ".png");
+			#endif
+
             return coef;
         }
     }

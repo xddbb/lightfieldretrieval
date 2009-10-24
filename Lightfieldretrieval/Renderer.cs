@@ -37,7 +37,7 @@ namespace Lightfieldretrieval
         FileInfo fileinfo;
         int[] indices;              // Store the indices in a array
         Vector3[] vectors;          // And the vectors
-        Vector3 center;
+        Vector3 centroid;
         
         /// <summary>
         /// Point of views, half the point of the dodecahedron
@@ -148,17 +148,17 @@ namespace Lightfieldretrieval
         /// </summary>
         protected override void Initialize()
         {			
-
             ///////////////////////////////////////////////////////////////////////////
             // Read mesh from a file and generate veretex and index buffers on the GPU
             ///////////////////////////////////////////////////////////////////////////
+
             if (filename == null || filename == "")
             {
                 this.Exit();
                 return;
             }
 
-            center = Vector3.Zero;
+            centroid = Vector3.Zero;
             float distance = 0;
             using (StreamReader sr = File.OpenText(filename))
             {
@@ -168,7 +168,11 @@ namespace Lightfieldretrieval
                 //
                 s = sr.ReadLine();
                 int primitiveCount = Int32.Parse(s);
-                //
+                
+
+				//////////////////////////////////////////////////////////////////////
+				// Read the vertices from the file 
+				//////////////////////////////////////////////////////////////////////
                 // Read into vertex array
                 vectors = new Vector3[vertexCount];
                 modelVertices = new VertexPositionColor[vertexCount];
@@ -176,49 +180,86 @@ namespace Lightfieldretrieval
                 {
                     s = sr.ReadLine();
                     String[] subs = s.Split(new char[] { ' ' });
-										
-					#if !COMMAS
-						float x = Single.Parse(subs[0].Replace('.',','));
-						float y = Single.Parse(subs[1].Replace('.',','));
-						float z = Single.Parse(subs[2].Replace('.',','));
-					#else
-						float x = Single.Parse(subs[0]);
-						float y = Single.Parse(subs[1]);
-						float z = Single.Parse(subs[2]);
-					#endif
+
+					float x = 0.0f, y = 0.0f, z = 0.0f;	// Must init here, hence the 0-s
+					Vector3 v;
+					try
+					{
+#if !COMMAS
+						x = Single.Parse(subs[0].Replace('.',','));
+						y = Single.Parse(subs[1].Replace('.',','));
+						z = Single.Parse(subs[2].Replace('.',','));
+#else
+						x = Single.Parse(subs[0]);
+						y = Single.Parse(subs[1]);
+						z = Single.Parse(subs[2]);
+#endif
+					}
+					catch (FormatException ex)
+					{
+						// Model bug!! Few models have a (-1.#QNAN -1.#QNAN -1.#QNAN) vector
+						// and will be treated like (-1, -1, -1)
+						x = -1.0f;
+						y = -1.0f;
+						z = -1.0f;
+					}
                     //
-                    Vector3 v = new Vector3(x, y, z);
+                    v = new Vector3(x, y, z);
                     vectors[i] = v;
-                    center += v;
                     modelVertices[i] = new VertexPositionColor(vectors[i], Color.Black);
                 }
-                center /= vertexCount;
-                //
-                foreach (Vector3 v in vectors)
-                {
-                    float d = (v - center).LengthSquared();
-                    if (d > distance)
-                        distance = d;
-                }
-                distance = (float)Math.Sqrt(distance);
 
-                // Threeangle has least indices (3)
+
+				//////////////////////////////////////////////////////////////////////
+				// Create the triangles (index buffer data) and calculate the center of mass
+				//////////////////////////////////////////////////////////////////////
+                // Thriangle has least indices (3)
                 List<int> indexList = new List<int>(primitiveCount * 3);
+				centroid = Vector3.Zero;									// Init the center to Zero
+				float totalarea = 0;
                 for (int i = 0; i < primitiveCount; i++)
                 {
                     s = sr.ReadLine();
                     String[] subs = s.Split(new char[] { ' ' });
                     int first = Int32.Parse(subs[1]);
                     int last = Int32.Parse(subs[2]);
+					// Center of the polyface, accumulated over the triangles of the polyface
+					Vector3 polycenter = Vector3.Zero;
                     for (int j = 3; j < subs.Length; j++)
                     {
                         int curr = Int32.Parse(subs[j]);
                         indexList.Add(first);
                         indexList.Add(last);
-                        indexList.Add(curr);
-                        last = curr;
+                        indexList.Add(curr);                        
+						
+						// Get the three vectors of the triangle
+						Vector3 a = vectors[first];
+						Vector3 b = vectors[curr];
+						Vector3 c = vectors[last];
+						// Get the center of it	and scale it with the area
+						float area = Vector3.Cross((b - a), (c - a)).Length() * 0.5f;
+						totalarea += area;
+						polycenter += (area / 3.0f) * (a + b + c);						
+
+						// Ready for next loop
+						last = curr;
                     }
+					polycenter /= subs.Length - 3; //  scale it with the no. of triangles
+					centroid += polycenter;
                 }
+				centroid /= totalarea;
+
+
+				//////////////////////////////////////////////////////////////////////
+				// Get the distance to the most distant vertex
+				//////////////////////////////////////////////////////////////////////
+				foreach (Vector3 v in vectors)
+				{
+					float d = (v - centroid).LengthSquared();
+					if (d > distance)
+						distance = d;
+				}
+				distance = (float)Math.Sqrt(distance);
 
                 vertexBuffer = new VertexBuffer(graphics.GraphicsDevice, VertexPositionColor.SizeInBytes * vertexCount, BufferUsage.None);
                 vertexBuffer.SetData<VertexPositionColor>(modelVertices);
@@ -233,7 +274,7 @@ namespace Lightfieldretrieval
             ///////////////////////////////////////////////////////////////////////////
             worldMatrix = Matrix.Identity;
             povindex = -1;
-            projectionMatrix = Matrix.CreateOrthographic(2 * distance, 2 * distance, -distance, distance );
+            projectionMatrix = Matrix.CreateOrthographic(2 * distance, 2 * distance, -2 * distance, 2 * distance );
             //
             basicEffect = new BasicEffect(graphics.GraphicsDevice, null);
             basicEffect.EnableDefaultLighting();
@@ -242,7 +283,7 @@ namespace Lightfieldretrieval
 			//////////////////////////////////////////////////////////////////////
 			// Pseudo random rotations
 			//////////////////////////////////////////////////////////////////////
-			random = new Random(42);		// Seed
+			random = new Random(filename.GetHashCode());	// always the same seed for the same modelpath
 			rotations = new Matrix[10];
 			// A lot of models of the same class are roatated the same,
 			// so we keep one initial roatation well
@@ -304,7 +345,8 @@ namespace Lightfieldretrieval
             //graphics.GraphicsDevice.RenderState.FillMode = FillMode.WireFrame;
 
             // Send matrices to the shader program
-			basicEffect.World = Matrix.CreateTranslation(-center) * rotations[rotindex];		//Bring to origin and rotate
+			//basicEffect.World = rotations[rotindex] * Matrix.CreateTranslation(-center);		//Bring to origin and rotate
+			basicEffect.World = Matrix.CreateTranslation(-centroid) * rotations[rotindex];
             basicEffect.View = viewMatrix;							
             basicEffect.Projection = projectionMatrix;
 			//

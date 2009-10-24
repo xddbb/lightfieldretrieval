@@ -35,22 +35,30 @@ namespace FeatureComparator
 			//////////////////////////////////////////////////////////////////////
 			// Deserialization
 			//////////////////////////////////////////////////////////////////////
-			XmlSerializer s = new XmlSerializer(typeof(LightFieldDescriptor));
+			XmlSerializer s = new XmlSerializer(typeof(LightFieldSet));
 			TextReader r = new StreamReader(file0);
-			LightFieldDescriptor lfd0 = (LightFieldDescriptor)s.Deserialize(r);		
+			LightFieldSet lfs0 = (LightFieldSet)s.Deserialize(r);		
 			r.Close();
 			//
 			r = new StreamReader(file1);
-			LightFieldDescriptor lfd1 = (LightFieldDescriptor)s.Deserialize(r);
+			LightFieldSet lfs1 = (LightFieldSet)s.Deserialize(r);
 			r.Close();
 
 			//////////////////////////////////////////////////////////////////////
-			// Actual compare
+			// Actual compare. Search for the optimal roataion among the lightfields
 			//////////////////////////////////////////////////////////////////////
-			Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 1.0f);
-			double dist = cmp.Compare();
+			double min = Single.PositiveInfinity;
+			for (int i = 0; i < lfs0.lightfields.Length; i++)
+			{
+				LightFieldDescriptor lfd0 = lfs0.lightfields[i];
+				LightFieldDescriptor lfd1 = lfs1.lightfields[i];
+				Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 20.0f);
+				double dist = cmp.Compare();
+				if (dist < min)
+					min = dist;
+			}						
 
-			Console.Write(dist);	// Output to console is enough for PowerShell script
+			Console.Write(min);	// Output to console is enough for PowerShell script
 		}
 	}
 }

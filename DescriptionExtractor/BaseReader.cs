@@ -13,13 +13,14 @@ namespace DescriptionExtractor
 
         // Constructor
 
-        public BaseReader(string dirname, string lookup)
+        public BaseReader(string basefilename)
         {
             dirs = new Hashtable();
             String line;
             StreamReader reader;
-            reader = File.OpenText(dirname + "/" + lookup);
+            reader = File.OpenText(basefilename);
             line = "";
+			FileInfo fi = new FileInfo(basefilename);
 
             while(line!=null)
             {
@@ -41,9 +42,8 @@ namespace DescriptionExtractor
                         {
                             model = parts[i];
                         }
-                    }
-
-                    dirs.Add(dirname + "/" + string.Join("/", result), model);
+                    }					
+                    dirs.Add(fi.DirectoryName + "/" + string.Join("/", result), model);
                 }
             }
 
