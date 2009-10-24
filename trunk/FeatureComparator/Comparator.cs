@@ -44,18 +44,35 @@ namespace FeatureComparator
 			return Math.Sqrt(sum);
 		}
 
+		/// <summary>
+		/// Compares arrays of image features, one by one
+		/// </summary>
+		/// <param name="aligmentA">First array of image features</param>
+		/// <param name="aligmentB">Second array of image features</param>
+		/// <returns>The distance</returns>
 		protected double Compare(int[] aligmentA, int[] aligmentB)
 		{
-			double sum = 0;
+			double sum = 0.0;
+			//
+			double zsum = 0.0;
+			double fsum = 0.0;
+			//
 			for (int i = 0; i < 20; i++)
 			{
 				FeatureVector fvA = lfdscA.GetImageFeatures(aligmentA[i]);
 				FeatureVector fvB = lfdscB.GetImageFeatures(aligmentB[i]);
 				//
 				double z = alpha * EuclideanDistance(fvA.zernike, fvB.zernike);
-				double f = beta * EuclideanDistance(fvA.zernike, fvB.zernike);
+				double f = beta * EuclideanDistance(fvA.fourier, fvB.fourier);				
+				//
 				sum += (f + z);
+				//
+				fsum += f;
+				zsum += z;
 			}
+			//Console.Write("z=" + zsum + ", f=" + fsum); 
+			//Console.Write("z/f=" + zsum / fsum); 
+			//
 			return sum;
 		}
 

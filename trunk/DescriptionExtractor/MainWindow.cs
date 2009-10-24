@@ -52,18 +52,11 @@ namespace DescriptionExtractor
                 Application.Exit();
                 return;
             }
-
-            // Process input directory
-            String dirname = args[1];
-            if(!Directory.Exists(dirname))
-            {
-                MessageBox.Show("Input directory does not exist!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Application.Exit();
-                return;
-            }
+           
+            String basefilename = args[1];            
 
             // Check if file exists
-            if (!File.Exists(dirname + "/basenames"))
+            if (!File.Exists(basefilename))
             {
                 MessageBox.Show("Basenames file does not exist", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
@@ -71,16 +64,64 @@ namespace DescriptionExtractor
             }
 
             // Get list of all directory and model files
-            reader = new BaseReader(dirname, "basenames");
+            reader = new BaseReader(basefilename);
                                         
             // Run workers
             imageProcessWorker.RunWorkerAsync();
         }
 
+		class ImageProcessState
+		{
+			// FeatureVector is a struct, hence passed by value by default
+			public ImageProcessState(FeatureVector fv, Bitmap bmp, FileInfo file, ManualResetEvent mevent)
+			{
+				this.fv = fv;
+				this.image = bmp;
+				this.file = file;
+				this.mevent = mevent;
+			}
+
+			public FeatureVector fv;
+			public Bitmap image;
+			public FileInfo file;
+			public ManualResetEvent mevent;		// Thread sync
+		}
+
+		private void ProcessImage(Object obj)
+		{
+			ImageProcessState prstate = (ImageProcessState)obj;
+
+			/////////////////////////////////////////////////////////////////////////////////
+			// Extract features
+			/////////////////////////////////////////////////////////////////////////////////
+			ZernikeDesc zernike = new ZernikeDesc(prstate.image);
+			FourierDesc fourier = new FourierDesc(prstate.image);
+			//
+			#if DEBUG
+				Console.WriteLine("Processing image " + prstate.file);
+				Stopwatch stopWatch = new Stopwatch();
+				stopWatch.Start();
+			#endif
+			//
+			// Actual processing within these methods
+			prstate.fv.zernike = zernike.Process();
+			prstate.fv.fourier = fourier.Process();
+			//
+			#if DEBUG
+				stopWatch.Stop();
+				// Get the elapsed time as a TimeSpan value.
+				TimeSpan ts = stopWatch.Elapsed;
+				// Format and display the TimeSpan value.
+				string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+				Console.WriteLine("Processed image " + prstate.file + " in " + elapsedTime);
+			#endif
+			prstate.mevent.Set();	// Thread done!
+		}
+		
+
         private void imageProcessWorker_DoWork(object sender, DoWorkEventArgs e)
         {           
-            ZernikeDesc zernike;
-            FourierDesc fourier;
+
             ICollection keyCol = reader.dirs.Keys;
 
             foreach (string dirname in keyCol)
@@ -91,7 +132,13 @@ namespace DescriptionExtractor
                     // Process directory
                     /////////////////////////////////////////////////////////////////////////////////
                     directory = new DirectoryInfo(dirname);
+					#if DEBUG
+						Console.WriteLine("Processing of directory " + dirname + " started");
+						Stopwatch stopWatch = new Stopwatch();
+						stopWatch.Start();
+					#endif
                     FileInfo[] files = directory.GetFiles("*.bmp");
+
 
                     if (files.Length > 0)
                     {
@@ -101,11 +148,19 @@ namespace DescriptionExtractor
 						LightFieldSet lightfieldSet = new LightFieldSet();				
 						lightfieldSet.lightfields = new LightFieldDescriptor[lfdCount];		// Put them in a set (array in this case)
 						//
-						for (int i = 0; i < lfdCount; i++)
+						for (int i = 0; i < lfdCount; i++)					// All lightfields in a directory
 						{
 							lfdsc = new LightFieldDescriptor();
 							lfdsc.imageFeatures = new FeatureVector[10];
-							for (int j = 0; j < 10; j++)
+
+							/// Mutlithreading tools ///////////////////////////////////////////////
+							int cores = Environment.ProcessorCount;
+							ThreadPool.SetMaxThreads(cores + 1, cores + 1);		// Number of cores + the current thread
+							// Create eveths to wait for!
+							ManualResetEvent[] events = new ManualResetEvent[10];
+							//////////////////////////////////////////////////////////////////////
+
+							for (int j = 0; j < 10; j++)					// All images in a lightfield
 							{
 								//////////////////////////////////////////////////////////////////////
 								// Read file
@@ -120,39 +175,33 @@ namespace DescriptionExtractor
 									MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 									Application.Exit();
 								}
+
 								// Report progess and clone image for display
 								Bitmap clone = new Bitmap(image);
 								imageProcessWorker.ReportProgress( ((i * 10 + j) * 100) / files.Length, clone);
 
+								events[j] = new ManualResetEvent(false);			// release handle for the thread
+								lfdsc.imageFeatures[j] = new FeatureVector();
+								ImageProcessState prstate = new ImageProcessState(lfdsc.imageFeatures[j], image, file, events[j] );
 
-								/////////////////////////////////////////////////////////////////////////////////
-								// Extract features
-								/////////////////////////////////////////////////////////////////////////////////
-								zernike = new ZernikeDesc(image);
-								fourier = new FourierDesc(image);
-								//
-								#if DEBUG
-									Console.WriteLine("Processing image " + file);
-									Stopwatch stopWatch = new Stopwatch();
-									stopWatch.Start();
-								#endif
-								//
-								lfdsc.imageFeatures[j].zernike = zernike.Process();
-								lfdsc.imageFeatures[j].fourier = fourier.Process();
-								//
-								#if DEBUG
-								stopWatch.Stop();
-									// Get the elapsed time as a TimeSpan value.
-									TimeSpan ts = stopWatch.Elapsed;
-									// Format and display the TimeSpan value.
-									string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
-									Console.WriteLine("Processed image " + file + " in " + elapsedTime);
-								#endif
-								//
-								imageProcessWorker.ReportProgress( ((i * 10 + j) * 100) / files.Length, clone );
+								WaitCallback async = new WaitCallback(this.ProcessImage);								
+								ThreadPool.QueueUserWorkItem(async, prstate);								
+
+								//imageProcessWorker.ReportProgress( ((i * 10 + j) * 100) / files.Length, clone );
+								int g = 0;																 
 							}
+							WaitHandle.WaitAll(events);		// Thread barieir sync
 							lightfieldSet.lightfields[i] = lfdsc;
-						}																                        
+						}
+
+						#if DEBUG
+							stopWatch.Stop();
+							// Get the elapsed time as a TimeSpan value.
+							TimeSpan ts = stopWatch.Elapsed;
+							// Format and display the TimeSpan value.
+							string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+							Console.WriteLine("Processing of directory " + dirname + " done in " + elapsedTime);
+						#endif	                        
 
 
                         /////////////////////////////////////////////////////////////////////////////////
