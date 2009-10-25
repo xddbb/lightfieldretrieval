@@ -80,13 +80,48 @@ namespace DescriptionExtractor
         
         private void ComputeFourier()
         {
+            /*
+            double[] data1 = new double[boundary_count_];
+            double[] data2 = new double[boundary_count_];
+
+            for (int i = 0; i < boundary_count_; i++)
+            {
+                data1[i] = Math.Sqrt(Math.Pow(complex_[i].real, 2) + Math.Pow(complex_[i].imag, 2));
+            }
+
+             */
             Fourier.FourierTransform.DFT(complex_, Fourier.FourierDirection.Forward);
+
+            /*
+            Complex[] newcomplex = new Complex[boundary_count_];
+
+            for (int z = 0; z < boundary_count_; z++)
+            {
+                if (z < coefficients_)
+                {
+                    newcomplex[z] = complex_[z];
+                }
+                else
+                {
+                    newcomplex[z] = new Complex(0, 0);
+                }
+            }
+
+            Fourier.FourierTransform.DFT(newcomplex, Fourier.FourierDirection.Backward);
+
+            for (int i = 0; i < boundary_count_; i++)
+            {
+                data2[i] = Math.Sqrt(Math.Pow(newcomplex[i].real, 2) + Math.Pow(newcomplex[i].imag, 2));
+            }
+             */
 
             // Compute absolute value
             for (int i = 0; i < boundary_count_; i++)
             {
                 fourier_[i] = Math.Sqrt(Math.Pow(complex_[i].real, 2) + Math.Pow(complex_[i].imag, 2));
             }
+
+            
         }
 
         // Computes the center and centroid distance
