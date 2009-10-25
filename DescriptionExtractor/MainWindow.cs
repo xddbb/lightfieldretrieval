@@ -34,9 +34,11 @@ namespace DescriptionExtractor
 		LightFieldDescriptor lfdsc;		
         DirectoryInfo directory;
         BaseReader reader;
+        string[] args;
 
-        public MainWindow()
+        public MainWindow(string[] arg)
         {
+            args = arg;
             InitializeComponent();            
         }
 
@@ -45,15 +47,14 @@ namespace DescriptionExtractor
             /////////////////////////////////////////////////////////////////////////////////
             // Process input
             /////////////////////////////////////////////////////////////////////////////////
-            String[] args = Environment.GetCommandLineArgs();
-            if (args.Length < 2)
+            if (args.Length < 1)
             {
                 MessageBox.Show("No input directory provided!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
                 return;
             }
            
-            String basefilename = args[1];            
+            String basefilename = args[0];            
 
             // Check if file exists
             if (!File.Exists(basefilename))
@@ -65,7 +66,7 @@ namespace DescriptionExtractor
 
             // Get list of all directory and model files
             reader = new BaseReader(basefilename);
-                                        
+                        
             // Run workers
             imageProcessWorker.RunWorkerAsync();
         }
