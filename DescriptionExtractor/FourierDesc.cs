@@ -390,7 +390,7 @@ namespace DescriptionExtractor
                     }
                     else if (bits_[x, y] == 1)
                     {
-                        asdf.SetPixel(x , y, Color.Black);
+                        asdf.SetPixel(x , y, Color.Gray);
                     }
                     else if (bits_[x, y] == 2)
                     {
