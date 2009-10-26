@@ -9,19 +9,25 @@ namespace DescriptionExtractor
 {
     public class BaseReader
     {
-        public Hashtable dirs;
+        public SortedList[] batches;
+        public SortedList dirs;
+        public SortedList<string, string> original;
 
         // Constructor
 
-        public BaseReader(string basefilename)
+        public BaseReader(string basefilename) : this(basefilename, -1) {}
+
+        public BaseReader(string basefilename, int batch)
         {
-            dirs = new Hashtable();
+            dirs = new SortedList();
+            original = new SortedList<string, string>();
             String line;
             StreamReader reader;
             reader = File.OpenText(basefilename);
             line = "";
 			FileInfo fi = new FileInfo(basefilename);
 
+            // Walk through lines
             while(line!=null)
             {
                 line = reader.ReadLine();
@@ -42,8 +48,37 @@ namespace DescriptionExtractor
                         {
                             model = parts[i];
                         }
-                    }					
-                    dirs.Add(fi.DirectoryName + "/" + string.Join("/", result), model);
+                    }
+
+                    string key = fi.DirectoryName + "/" + string.Join("/", result);
+			  
+                    dirs.Add(key, model);
+                    original.Add(key, line);
+                }
+            }
+
+            // Split into batches
+            if (batch > 0)
+            {
+                int batch_size = (int)Math.Ceiling((double)dirs.Count / (double)batch);
+                int batch_count = 0;
+                batches = new SortedList[batch_size];
+
+                foreach (DictionaryEntry de in dirs)
+                {
+                    int lookup = (int)((double)batch_count / (double)batch);
+
+                    if (batches[lookup] == null)
+                    {
+                        batches[lookup] = new SortedList();
+                        batches[lookup].Add(de.Key, de.Value);
+                    }
+                    else
+                    {
+                        batches[lookup].Add(de.Key, de.Value);
+                    }
+
+                    batch_count++;
                 }
             }
 
