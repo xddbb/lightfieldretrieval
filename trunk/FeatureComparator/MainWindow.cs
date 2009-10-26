@@ -210,10 +210,11 @@ namespace FeatureComparator
                 //////////////////////////////////////////////////////////////////////
 
                 TextWriter tw = new StreamWriter(de.Key + "/" + de.Value + "_dist.txt");
+                StringBuilder sb = new StringBuilder();
 
                 foreach (KeyValuePair<double, string> kvp in store)
                 {
-                    tw.WriteLine(kvp.Key + "\t" + kvp.Value);
+                    tw.WriteLine(String.Format("{0:0.0000000000000}",kvp.Key) + "\t" + kvp.Value);
                 }
 
                 tw.Close();
