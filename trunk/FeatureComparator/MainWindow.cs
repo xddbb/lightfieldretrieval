@@ -170,8 +170,7 @@ namespace FeatureComparator
                         // Release handle for the thread
                         events[iterator_threads] = new ManualResetEvent(false);
                         distances[iterator_distance] = new Distance();
-                        string name = reader.original[dirname];
-                        FeatureCompareState prstate = new FeatureCompareState(distances[iterator_distance], lfs1, lfs2, name, events[iterator_threads]);
+                        FeatureCompareState prstate = new FeatureCompareState(distances[iterator_distance], lfs1, lfs2, reader.original[dirname], events[iterator_threads]);
                         WaitCallback async = new WaitCallback(this.ComputeDistance);
                         ThreadPool.QueueUserWorkItem(async, prstate);
 
@@ -189,8 +188,23 @@ namespace FeatureComparator
                 // YES SIR .. Reporting for progress!
                 featureComparatorWorker.ReportProgress((int)(progress / ((double)reader.dirs.Count / 100)) , image);
 
+                // Sort distances
+                SortedList<double, string> store = new SortedList<double, string>();
+
+                for (int z = 0; z < distances.Length; z++)
+                {
+                    store.Add(distances[z].value, distances[z].name);
+                }
+
                 // Write distance to file
-                int ie = 0;
+                TextWriter tw = new StreamWriter(de.Key + "/" + de.Value + "_dist.txt");
+
+                foreach (KeyValuePair<double, string> kvp in store)
+                {
+                    tw.WriteLine(kvp.Key + "\t" + kvp.Value);
+                }
+
+                tw.Close();
             }
 
             // Exit
