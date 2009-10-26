@@ -71,7 +71,7 @@ namespace FeatureComparator
 
 		class FeatureCompareState
 		{
-			// FeatureVector is a struct, hence passed by value by default
+			// FeatureCompareState is a struct, hence passed by value by default
 			public FeatureCompareState(Distance distance, LightFieldSet source, LightFieldSet target, string name, ManualResetEvent mevent)
 			{
 				this.distance = distance;
@@ -116,7 +116,10 @@ namespace FeatureComparator
         {
             int progress = 0;
 
-            // First walk through all dirs
+            //////////////////////////////////////////////////////////////////////
+            // Walk through every model in the directory
+            //////////////////////////////////////////////////////////////////////
+
             foreach (DictionaryEntry de in reader.dirs)
             {
                 if (!File.Exists(de.Key + "/features.xml"))
@@ -145,7 +148,10 @@ namespace FeatureComparator
                 Distance[] distances = new Distance[reader.dirs.Count];
                 int iterator_distance = 0;
 
-                // Then walk through all batches, split because max 64 events
+                //////////////////////////////////////////////////////////////////////
+                // Then walk through all batches, split because max 64 events threads
+                //////////////////////////////////////////////////////////////////////
+
                 for (int z = 0; z < reader.batches.Length; z++)
                 {
                     // Create thread pool
@@ -167,7 +173,7 @@ namespace FeatureComparator
                         LightFieldSet lfs2 = (LightFieldSet)serializer.Deserialize(r);
                         r.Close();
 
-                        // Release handle for the thread
+                        // Insert handle for thread
                         events[iterator_threads] = new ManualResetEvent(false);
                         distances[iterator_distance] = new Distance();
                         FeatureCompareState prstate = new FeatureCompareState(distances[iterator_distance], lfs1, lfs2, reader.original[dirname], events[iterator_threads]);
@@ -188,7 +194,10 @@ namespace FeatureComparator
                 // YES SIR .. Reporting for progress!
                 featureComparatorWorker.ReportProgress((int)(progress / ((double)reader.dirs.Count / 100)) , image);
 
+                //////////////////////////////////////////////////////////////////////
                 // Sort distances
+                //////////////////////////////////////////////////////////////////////
+
                 SortedList<double, string> store = new SortedList<double, string>();
 
                 for (int z = 0; z < distances.Length; z++)
@@ -196,7 +205,10 @@ namespace FeatureComparator
                     store.Add(distances[z].value, distances[z].name);
                 }
 
+                //////////////////////////////////////////////////////////////////////
                 // Write distance to file
+                //////////////////////////////////////////////////////////////////////
+
                 TextWriter tw = new StreamWriter(de.Key + "/" + de.Value + "_dist.txt");
 
                 foreach (KeyValuePair<double, string> kvp in store)
