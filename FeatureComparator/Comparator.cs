@@ -36,11 +36,18 @@ namespace FeatureComparator
 		public static double EuclideanDistance(double[] vecA, double[] vecB)
 		{
 			double sum = 0;
+
+            if (vecA.Length != vecB.Length)
+            {
+                return -1;
+            }
+
 			for (int i = 0; i < vecA.Length; i++)
 			{
 				double t = (vecA[i] - vecB[i]);
 				sum += t*t;
 			}
+
 			return Math.Sqrt(sum);
 		}
 
@@ -63,12 +70,14 @@ namespace FeatureComparator
 				FeatureVector fvB = lfdscB.GetImageFeatures(aligmentB[i]);
 				//
 				double z = alpha * EuclideanDistance(fvA.zernike, fvB.zernike);
-				double f = beta * EuclideanDistance(fvA.fourier, fvB.fourier);				
-				//
-				sum += (f + z);
-				//
-				fsum += f;
-				zsum += z;
+				double f = beta * EuclideanDistance(fvA.fourier, fvB.fourier);
+
+                if (z > 0 && f > 0)
+                    sum += (f + z);
+                if (f > 0)
+                    fsum += f;
+                if (z > 0)
+                    zsum += z;
 			}
 			//Console.Write("z=" + zsum + ", f=" + fsum); 
 			//Console.Write("z/f=" + zsum / fsum); 

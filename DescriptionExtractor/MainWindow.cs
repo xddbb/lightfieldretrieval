@@ -123,7 +123,7 @@ namespace DescriptionExtractor
         private void imageProcessWorker_DoWork(object sender, DoWorkEventArgs e)
         {           
 
-            ICollection keyCol = reader.dirs.Keys;
+            ICollection<string> keyCol = reader.dirs.Keys;
 
             foreach (string dirname in keyCol)
             {
@@ -138,7 +138,7 @@ namespace DescriptionExtractor
 						Stopwatch stopWatch = new Stopwatch();
 						stopWatch.Start();
 					#endif
-                    FileInfo[] files = directory.GetFiles("*.bmp");
+                    FileInfo[] files = directory.GetFiles("*.png");
 
 
                     if (files.Length > 0)

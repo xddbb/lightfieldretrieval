@@ -34,12 +34,14 @@ namespace FeatureComparator
         Bitmap image;
         BaseReader reader;
         XmlSerializer serializer;
+        SortedList<string, LightFieldSet> lfs;
         string[] args;
 
         public MainWindow(string[] arg)
         {
             args = arg;
             serializer = new XmlSerializer(typeof(LightFieldSet));
+            lfs = new SortedList<string, LightFieldSet>();
             InitializeComponent();            
         }
 
@@ -97,11 +99,13 @@ namespace FeatureComparator
             //////////////////////////////////////////////////////////////////////
 
             double min = Single.PositiveInfinity;
+
             for (int i = 0; i < prstate.source.lightfields.Length; i++)
             {
                 LightFieldDescriptor lfd0 = prstate.source.lightfields[i];
                 LightFieldDescriptor lfd1 = prstate.target.lightfields[i];
-                Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 20.0f);
+
+                Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 2.5f);
                 double dist = cmp.Compare();
                 if (dist < min)
                     min = dist;
@@ -117,26 +121,32 @@ namespace FeatureComparator
             int progress = 0;
 
             //////////////////////////////////////////////////////////////////////
-            // Walk through every model in the directory
+            // Walk through every model in the directory and store streamfile
             //////////////////////////////////////////////////////////////////////
 
-            foreach (DictionaryEntry de in reader.dirs)
+            foreach (KeyValuePair<string, string> kvp in reader.dirs)
             {
-                if (!File.Exists(de.Key + "/features.xml"))
+                if (!File.Exists(kvp.Key + "/features.xml"))
                 {
                     MessageBox.Show("Error reading feature file!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Application.Exit();
                 }
 
-                // Load first xml
-                TextReader r = new StreamReader(de.Key + "/features.xml");
-                LightFieldSet lfs1 = (LightFieldSet)serializer.Deserialize(r);
+                TextReader r = new StreamReader(kvp.Key + "/features.xml");
+                lfs.Add(kvp.Key, (LightFieldSet)serializer.Deserialize(r));
                 r.Close();
+            }
 
+            //////////////////////////////////////////////////////////////////////
+            // Compute distances
+            //////////////////////////////////////////////////////////////////////
+
+            foreach (KeyValuePair<string, string> kvp in reader.dirs)
+            {
                 // Load preview bmp
                 try
                 {
-                    image = new Bitmap(de.Key + "/" + de.Value + "_LF0_IMG0.bmp");
+                    image = new Bitmap(kvp.Key + "/" + kvp.Value + "_LF0_IMG0.png");
                 }
                 catch (Exception)
                 {
@@ -162,21 +172,10 @@ namespace FeatureComparator
                     // Walk through every dir
                     foreach (string dirname in reader.batches[z].Keys)
                     {
-                        if (!File.Exists(dirname + "/features.xml"))
-                        {
-                            MessageBox.Show("Error reading image(s)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            Application.Exit();
-                        }
-
-                        // Load second xml
-                        r = new StreamReader(dirname + "/features.xml");
-                        LightFieldSet lfs2 = (LightFieldSet)serializer.Deserialize(r);
-                        r.Close();
-
                         // Insert handle for thread
                         events[iterator_threads] = new ManualResetEvent(false);
                         distances[iterator_distance] = new Distance();
-                        FeatureCompareState prstate = new FeatureCompareState(distances[iterator_distance], lfs1, lfs2, reader.original[dirname], events[iterator_threads]);
+                        FeatureCompareState prstate = new FeatureCompareState(distances[iterator_distance], lfs[kvp.Key], lfs[dirname], reader.original[dirname], events[iterator_threads]);
                         WaitCallback async = new WaitCallback(this.ComputeDistance);
                         ThreadPool.QueueUserWorkItem(async, prstate);
 
@@ -202,19 +201,22 @@ namespace FeatureComparator
 
                 for (int z = 0; z < distances.Length; z++)
                 {
-                    store.Add(distances[z].value, distances[z].name);
+                    if (!store.ContainsKey(distances[z].value))
+                    {
+                        store.Add(distances[z].value, distances[z].name);
+                    }
                 }
 
                 //////////////////////////////////////////////////////////////////////
                 // Write distance to file
                 //////////////////////////////////////////////////////////////////////
 
-                TextWriter tw = new StreamWriter(de.Key + "/" + de.Value + "_dist.txt");
+                TextWriter tw = new StreamWriter(kvp.Key + "/" + kvp.Value + "_dist.txt");
                 StringBuilder sb = new StringBuilder();
 
-                foreach (KeyValuePair<double, string> kvp in store)
+                foreach (KeyValuePair<double, string> str in store)
                 {
-                    tw.WriteLine(String.Format("{0:0.0000000000000}",kvp.Key) + "\t" + kvp.Value);
+                    tw.WriteLine(String.Format("{0:0.0000000000000}",str.Key) + "\t" + str.Value);
                 }
 
                 tw.Close();
