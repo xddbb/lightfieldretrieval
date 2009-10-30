@@ -72,7 +72,7 @@ namespace FeatureComparator
 				double z = alpha * EuclideanDistance(fvA.zernike, fvB.zernike);
 				double f = beta * EuclideanDistance(fvA.fourier, fvB.fourier);
 
-                if (z > 0 && f > 0)
+                if (z > 0 || f > 0)
                     sum += (f + z);
                 if (f > 0)
                     fsum += f;

@@ -35,6 +35,8 @@ namespace FeatureComparator
         BaseReader reader;
         XmlSerializer serializer;
         SortedList<string, LightFieldSet> lfs;
+        double[,] bins;
+        int bins_amount;
         string[] args;
 
         public MainWindow(string[] arg)
@@ -42,6 +44,7 @@ namespace FeatureComparator
             args = arg;
             serializer = new XmlSerializer(typeof(LightFieldSet));
             lfs = new SortedList<string, LightFieldSet>();
+            bins_amount = 10;
             InitializeComponent();            
         }
 
@@ -105,7 +108,7 @@ namespace FeatureComparator
                 LightFieldDescriptor lfd0 = prstate.source.lightfields[i];
                 LightFieldDescriptor lfd1 = prstate.target.lightfields[i];
 
-                Comparator cmp = new Comparator(lfd0, lfd1, 1.0f, 2.5f);
+                Comparator cmp = new Comparator(lfd0, lfd1, 4.0f, 1.0f);
                 double dist = cmp.Compare();
                 if (dist < min)
                     min = dist;
@@ -119,6 +122,8 @@ namespace FeatureComparator
         private void featureComparatorWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             int progress = 0;
+            int bins_disperse = (int)Math.Ceiling((double)(reader.dirs.Count) / bins_amount);
+            bins = new double[reader.dirs.Count, bins_disperse];
 
             //////////////////////////////////////////////////////////////////////
             // Walk through every model in the directory and store streamfile
@@ -187,12 +192,6 @@ namespace FeatureComparator
                     WaitHandle.WaitAll(events);
                 }
 
-                // Write double to file
-                progress++;
-
-                // YES SIR .. Reporting for progress!
-                featureComparatorWorker.ReportProgress((int)(progress / ((double)reader.dirs.Count / 100)) , image);
-
                 //////////////////////////////////////////////////////////////////////
                 // Sort distances
                 //////////////////////////////////////////////////////////////////////
@@ -212,7 +211,6 @@ namespace FeatureComparator
                 //////////////////////////////////////////////////////////////////////
 
                 TextWriter tw = new StreamWriter(kvp.Key + "/" + kvp.Value + "_dist.txt");
-                StringBuilder sb = new StringBuilder();
 
                 foreach (KeyValuePair<double, string> str in store)
                 {
@@ -220,6 +218,63 @@ namespace FeatureComparator
                 }
 
                 tw.Close();
+
+                //if (reader.categories[kvp.Key] == "AIRCRAFT")
+
+                //////////////////////////////////////////////////////////////////////
+                // Compute performance statistics
+                //////////////////////////////////////////////////////////////////////
+
+                double percentage = 100 / bins_amount;
+                int g = 0;
+
+                foreach (KeyValuePair<double, string> str in store)
+                {
+                    if (reader.categories[reader.reversed[str.Value]] == reader.categories[kvp.Key])
+                    {
+                        bins[progress, (int)Math.Floor((double)g / (double)bins_amount)] += percentage;
+                    }
+
+                    g++;
+                }
+
+                //////////////////////////////////////////////////////////////////////
+                // Write performance stats to file
+                //////////////////////////////////////////////////////////////////////
+
+                TextWriter sw = new StreamWriter(reader.directoryname + "/performance.txt");
+                int[] bins_total = new int[bins_disperse];
+
+                for (int r = 0; r < reader.dirs.Count; r++)
+                {
+                    for (int t = 0; t < bins_disperse; t++)
+                    {
+                        if (bins[r, t] != 0)
+                        {
+                            bins_total[t] += (int)bins[r, t];
+                        }
+                        sw.Write(bins[r, t] + " ");
+                    }
+
+                    sw.Write(sw.NewLine);
+                }
+
+                for (int a = 0; a < bins_disperse; a++)
+                {
+                    sw.Write((int)(bins_total[a] / (progress + 1)) + " ");
+                }
+
+                sw.Close();
+
+                //////////////////////////////////////////////////////////////////////
+                // Progress reporting
+                //////////////////////////////////////////////////////////////////////
+
+                // Write double to file
+                progress++;
+
+                // YES SIR .. Reporting for progress!
+                featureComparatorWorker.ReportProgress((int)(progress / ((double)reader.dirs.Count / 100)), image);
             }
 
             // Exit

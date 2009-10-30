@@ -12,6 +12,9 @@ namespace DescriptionExtractor
         public SortedList[] batches;
         public SortedList<string, string> dirs;
         public SortedList<string, string> original;
+        public SortedList<string, string> reversed;
+        public Dictionary<string, string> categories;
+        public string directoryname;
 
         // Constructor
 
@@ -21,11 +24,14 @@ namespace DescriptionExtractor
         {
             dirs = new SortedList<string, string>();
             original = new SortedList<string, string>();
+            reversed = new SortedList<string, string>();
+            categories = new Dictionary<string, string>();
             String line;
             StreamReader reader;
             reader = File.OpenText(basefilename);
             line = "";
 			FileInfo fi = new FileInfo(basefilename);
+            directoryname = fi.DirectoryName;
 
             // Walk through lines
             while(line!=null)
@@ -36,24 +42,31 @@ namespace DescriptionExtractor
                 {
                     string model = "";
                     string[] parts = line.Split('/');
-                    string[] result = new string[parts.Length - 1];
 
-                    for (int i = 0; i < parts.Length; i++)
+                    if (parts.Length > 2)
                     {
-                        if (i < parts.Length - 1)
-                        {
-                            result[i] = parts[i];
-                        }
-                        else
-                        {
-                            model = parts[i];
-                        }
-                    }
+                        string[] result = new string[parts.Length - 1];
+                        string category = parts[0];
 
-                    string key = fi.DirectoryName + "/" + string.Join("/", result);
-			  
-                    dirs.Add(key, model);
-                    original.Add(key, line);
+                        for (int i = 0; i < parts.Length; i++)
+                        {
+                            if (i < parts.Length - 1)
+                            {
+                                result[i] = parts[i];
+                            }
+                            else
+                            {
+                                model = parts[i];
+                            }
+                        }
+
+                        string key = directoryname + "/" + string.Join("/", result);
+
+                        dirs.Add(key, model);
+                        original.Add(key, line);
+                        reversed.Add(line, key);
+                        categories.Add(key, category);
+                    }
                 }
             }
 
