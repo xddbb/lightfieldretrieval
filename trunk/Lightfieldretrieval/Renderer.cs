@@ -375,7 +375,7 @@ namespace Lightfieldretrieval
                 graphics.GraphicsDevice.PresentationParameters.BackBufferFormat);
 
             graphics.GraphicsDevice.ResolveBackBuffer(renderTargetTexture);
-            renderTargetTexture.Save(fileinfo.FullName + "_LF" + rotindex + "_IMG" + povindex + ".bmp", ImageFileFormat.Bmp);
+            renderTargetTexture.Save(fileinfo.FullName + "_LF" + rotindex + "_IMG" + povindex + ".png", ImageFileFormat.Png);
 
 			if (povindex >= povs.Length - 1)
 			{

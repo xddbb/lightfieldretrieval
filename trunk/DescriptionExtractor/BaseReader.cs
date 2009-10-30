@@ -10,7 +10,7 @@ namespace DescriptionExtractor
     public class BaseReader
     {
         public SortedList[] batches;
-        public SortedList dirs;
+        public SortedList<string, string> dirs;
         public SortedList<string, string> original;
 
         // Constructor
@@ -19,7 +19,7 @@ namespace DescriptionExtractor
 
         public BaseReader(string basefilename, int batch)
         {
-            dirs = new SortedList();
+            dirs = new SortedList<string, string>();
             original = new SortedList<string, string>();
             String line;
             StreamReader reader;
@@ -64,7 +64,7 @@ namespace DescriptionExtractor
                 int batch_count = 0;
                 batches = new SortedList[batch_size];
 
-                foreach (DictionaryEntry de in dirs)
+                foreach (KeyValuePair<string, string> de in dirs)
                 {
                     int lookup = (int)((double)batch_count / (double)batch);
 
