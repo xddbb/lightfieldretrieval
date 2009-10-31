@@ -278,7 +278,6 @@ namespace DescriptionExtractor
             return bmp;
         }
 
-        static int c = 0;
 		/// <summary>
 		/// Porcesses the bitmap, extracting the Zernike moments up to the n-th order (defined in class)
 		/// </summary>

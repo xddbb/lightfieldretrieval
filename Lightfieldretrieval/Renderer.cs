@@ -195,7 +195,7 @@ namespace Lightfieldretrieval
 						z = Single.Parse(subs[2]);
 #endif
 					}
-					catch (FormatException ex)
+					catch (FormatException)
 					{
 						// Model bug!! Few models have a (-1.#QNAN -1.#QNAN -1.#QNAN) vector
 						// and will be treated like (-1, -1, -1)
