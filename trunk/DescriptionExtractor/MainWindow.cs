@@ -188,8 +188,7 @@ namespace DescriptionExtractor
 								WaitCallback async = new WaitCallback(this.ProcessImage);								
 								ThreadPool.QueueUserWorkItem(async, prstate);								
 
-								//imageProcessWorker.ReportProgress( ((i * 10 + j) * 100) / files.Length, clone );
-								int g = 0;																 
+								//imageProcessWorker.ReportProgress( ((i * 10 + j) * 100) / files.Length, clone );															 
 							}
 							WaitHandle.WaitAll(events);		// Thread barieir sync
 							lightfieldSet.lightfields[i] = lfdsc;
