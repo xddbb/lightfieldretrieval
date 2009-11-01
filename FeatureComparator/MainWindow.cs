@@ -197,11 +197,14 @@ namespace FeatureComparator
                 //////////////////////////////////////////////////////////////////////
 
                 SortedList<double, string> store = new SortedList<double, string>();
+                TextWriter tw = new StreamWriter(kvp.Key + "/" + kvp.Value + ".dist");
 
                 for (int z = 0; z < distances.Length; z++)
                 {
                     if (!store.ContainsKey(distances[z].value))
                     {
+                        tw.WriteLine(String.Format("{0:0.0000000000000}", distances[z].value) + "\t" + distances[z].name);
+
                         store.Add(distances[z].value, distances[z].name);
                     }
                 }
@@ -210,11 +213,9 @@ namespace FeatureComparator
                 // Write distance to file
                 //////////////////////////////////////////////////////////////////////
 
-                TextWriter tw = new StreamWriter(kvp.Key + "/" + kvp.Value + "_dist.txt");
-
                 foreach (KeyValuePair<double, string> str in store)
                 {
-                    tw.WriteLine(String.Format("{0:0.0000000000000}",str.Key) + "\t" + str.Value);
+                    // tw.WriteLine(String.Format("{0:0.0000000000000}",str.Key) + "\t" + str.Value);
                 }
 
                 tw.Close();
